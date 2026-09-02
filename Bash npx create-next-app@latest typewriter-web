@@ -1,0 +1,147 @@
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        
+        {
+            "type": "chrome",
+            "request": "launch",
+            "name": "Launch Chrome against localhost",
+            "url": "http://localhost:8080",
+            "webRoot": "${workspaceFolder}"
+
+              npx create-next-app@latest typewriter-web
+              cd typewriter-web
+
+              git remote add origin https://github.com/lia4682-ctrl/typewriter-web.git
+
+              'use client';
+
+              import React, { useState, useEffect, useRef } from 'react';
+
+              export default function TypewriterArchivePage() {
+                const [currentDraft, setCurrentDraft] = useState('');
+                const audioCtxRef = useRef<AudioContext | null>(null);
+
+                // 브라우저 Web Audio API 초기화
+                useEffect(() => {
+                  const initAudio = () => {
+                    if (!audioCtxRef.current) {
+                      audioCtxRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+                    }
+                  };
+                  window.addEventListener('keydown', initAudio, { once: true });
+                  return () => window.removeEventListener('keydown', initAudio);
+                }, []);
+
+                // 1. 타자기 키 누름 효과음 ('탁')
+                const playTypeSound = () => {
+                  if (!audioCtxRef.current) return;
+                  const ctx = audioCtxRef.current;
+                  if (ctx.state === 'suspended') ctx.resume();
+
+                  // 임펄스 노이즈 생성으로 타자기 '탁' 소리 연출
+                  const bufferSize = ctx.sampleRate * 0.03; // 0.03초 길이
+                  const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                  const data = buffer.getChannelData(0);
+                  for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                  }
+
+                  const noise = ctx.createBufferSource();
+                  noise.buffer = buffer;
+
+                  // 타자기 타격음 저음 필터링
+                  const filter = ctx.createBiquadFilter();
+                  filter.type = 'bandpass';
+                  filter.frequency.value = 1200;
+
+                  const gain = ctx.createGain();
+                  gain.gain.setValueAtTime(0.4, ctx.currentTime);
+                  gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.03);
+
+                  noise.connect(filter);
+                  filter.connect(gain);
+                  gain.connect(ctx.destination);
+
+                  noise.start();
+                };
+
+                // 2. 줄바꿈 레버/종 효과음 ('띵!')
+                const playBellSound = () => {
+                  if (!audioCtxRef.current) return;
+                  const ctx = audioCtxRef.current;
+                  if (ctx.state === 'suspended') ctx.resume();
+
+                  const osc = ctx.createOscillator();
+                  const gain = ctx.createGain();
+
+                  osc.type = 'sine';
+                  osc.frequency.setValueAtTime(1800, ctx.currentTime); // 고음 종소리
+
+                  gain.gain.setValueAtTime(0.3, ctx.currentTime);
+                  gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.6);
+
+                  osc.connect(gain);
+                  gain.connect(ctx.destination);
+
+                  osc.start();
+                  osc.stop(ctx.currentTime + 0.6);
+                };
+
+                // 키보드 입력 핸들러
+                useEffect(() => {
+                  const handleKeyDown = (e: KeyboardEvent) => {
+                    // 한글 입력 및 조합 제어 (키 반복 방지)
+                    if (e.isComposing) return;
+
+                    if (e.key === 'Backspace') {
+                      setCurrentDraft((prev) => prev.slice(0, -1));
+                      playTypeSound();
+                      return;
+                    }
+
+                    if (e.key === 'Enter') {
+                      setCurrentDraft((prev) => prev + '\n');
+                      playBellSound(); // 줄바꿈 시 종소리
+                      return;
+                    }
+
+                    // 일반 문자가 입력될 때 효과음 재생
+                    if (e.key.length === 1) {
+                      setCurrentDraft((prev) => prev + e.key);
+                      playTypeSound();
+                    }
+                  };
+
+                  window.addEventListener('keydown', handleKeyDown);
+                  return () => window.removeEventListener('keydown', handleKeyDown);
+                }, []);
+
+                return (
+                  <main className="min-h-screen bg-[#FAF7F0] text-[#191D32] flex flex-col font-serif relative overflow-hidden select-none">
+                    {/* 타자기 배경 이미지 */}
+                    <div className="absolute inset-0 z-0 flex items-center justify-center p-4">
+                      <img 
+                        src="/typewriter-base.png" 
+                        alt="빈티지 타자기 탑뷰" 
+                        className="max-w-[900px] w-full h-auto drop-shadow-2xl"
+                      />
+                    </div>
+
+                    {/* 종이 영역 & 타이핑 텍스트 */}
+                    <div className="absolute top-[18%] left-1/2 -translate-x-1/2 w-full max-w-[500px] z-10 p-6 flex flex-col items-center">
+                      <pre className="text-2xl font-bold whitespace-pre-wrap tracking-wide text-center w-full min-h-[300px] leading-relaxed">
+                        {currentDraft}
+                        <span className="inline-block w-2.5 h-6 bg-[#191D32] animate-pulse ml-0.5" />
+                      </pre>
+                    </div>
+                  </main>
+                );
+              }
+
+        }
+    ]
+}npm init -y
