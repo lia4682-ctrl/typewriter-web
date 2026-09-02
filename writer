@@ -1,8 +1,0 @@
-export default function Page() {
-  return (
-    <div style={{ padding: '50px', textAlign: 'center', fontFamily: 'sans-serif' }}>
-      <h1>⌨️ 타자기 일상 기록 서비스</h1>
-      <p>배포 성공! 화면이 정상적으로 연결되었습니다.</p>
-    </div>
-  );
-}
