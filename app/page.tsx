@@ -329,33 +329,29 @@ export default function TypewriterApp() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: '20px 0 50px 0',
+        padding: '20px 0 120px 0',
         overflowX: 'hidden',
         userSelect: 'none',
         boxSizing: 'border-box'
       }}
     >
-      {/* 400px 이하 모바일 전용 반응형 스타일 적용 */}
       <style jsx global>{`
         .typewriter-wrapper {
-          width: 100%;
-          max-width: 520px;
+          width: 90%;
+          max-width: 850px;
           aspect-ratio: 4 / 3.3;
-          margin-top: 40px;
-          margin-bottom: 20px;
+          margin-top: 10px;
         }
 
         .typewriter-textarea {
-          font-size: 15px;
+          font-size: 22px;
         }
 
         @media (max-width: 400px) {
           .typewriter-wrapper {
             width: 175vw !important;
             max-width: none !important;
-            aspect-ratio: 4 / 3.3;
             margin-top: 20px !important;
-            margin-bottom: 10px !important;
           }
 
           .typewriter-textarea {
@@ -364,14 +360,14 @@ export default function TypewriterApp() {
         }
       `}</style>
 
-      {/* 쓰레기통 */}
+      {/* 키운 쓰레기통 (110px) */}
       <div
         ref={binRef}
         style={{
-          position: 'absolute',
-          top: '15px',
-          right: '15px',
-          width: '70px',
+          position: 'fixed',
+          top: '20px',
+          right: '25px',
+          width: '110px',
           zIndex: 30,
           transition: 'transform 0.2s ease',
           transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
@@ -398,7 +394,7 @@ export default function TypewriterApp() {
             position: 'absolute',
             left: `${paper.x}px`,
             top: `${paper.y}px`,
-            width: '75px',
+            width: '85px',
             transform: `rotate(${paper.rotate}deg)`,
             zIndex: draggingId === paper.id ? 100 : 25,
             cursor: 'pointer',
@@ -408,7 +404,7 @@ export default function TypewriterApp() {
         />
       ))}
 
-      {/* 타자기 프레임 (모바일 400px 이하에서만 커지고 반응형으로 원래 크기 유지) */}
+      {/* 확대된 타자기 본체 프레임 */}
       <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 1 }}>
         {/* 입력 레이어 */}
         <div
@@ -471,16 +467,19 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 하단 버튼 그룹 */}
+      {/* 화면 바닥에 고정된 하단 버튼 그룹 (Fixed) */}
       <div
         style={{
+          position: 'fixed',
+          bottom: '20px',
+          left: '50%',
+          transform: 'translateX(-50%)',
           display: 'flex',
           flexDirection: 'column',
-          gap: '12px',
+          gap: '10px',
           width: 'calc(100% - 40px)',
           maxWidth: '380px',
-          marginTop: '10px',
-          zIndex: 20
+          zIndex: 50
         }}
       >
         <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
@@ -488,7 +487,7 @@ export default function TypewriterApp() {
             onClick={handleSaveTxt}
             style={{
               flex: 1,
-              padding: '16px 8px',
+              padding: '14px 8px',
               fontSize: '14px',
               fontFamily: 'Courier New, monospace',
               color: '#ffffff',
@@ -501,7 +500,7 @@ export default function TypewriterApp() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.4)'
+              boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
             }}
           >
             💾 .txt 저장하기
@@ -511,7 +510,7 @@ export default function TypewriterApp() {
             onClick={handleDiscard}
             style={{
               flex: 1,
-              padding: '16px 8px',
+              padding: '14px 8px',
               fontSize: '14px',
               fontFamily: 'Courier New, monospace',
               color: '#ffffff',
@@ -524,7 +523,7 @@ export default function TypewriterApp() {
               alignItems: 'center',
               justifyContent: 'center',
               gap: '4px',
-              boxShadow: '0 4px 10px rgba(0,0,0,0.4)'
+              boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
             }}
           >
             🗑️ 버리기
@@ -535,7 +534,7 @@ export default function TypewriterApp() {
           onClick={() => setIsKakaoModalOpen(true)}
           style={{
             width: '100%',
-            padding: '16px 8px',
+            padding: '14px 8px',
             fontSize: '14px',
             fontFamily: 'Courier New, monospace',
             color: '#3C1E1E',
@@ -549,7 +548,7 @@ export default function TypewriterApp() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '4px',
-            boxShadow: '0 4px 10px rgba(0,0,0,0.4)'
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
           }}
         >
           ☕ 카카오페이로 커피 한 잔 선물하기
