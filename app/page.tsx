@@ -536,13 +536,13 @@ export default function TypewriterApp() {
         .typewriter-textarea {
           font-size: 14px;
         }
-        @media (max-width: 400px) {
+        @media (max-width: 500px) {
           .typewriter-wrapper {
-            width: 175vw !important;
+            width: 130vw !important;
             max-width: none !important;
           }
           .typewriter-textarea {
-            font-size: 13px !important;
+            font-size: 12px !important;
           }
         }
       `}</style>
@@ -569,36 +569,37 @@ export default function TypewriterApp() {
             position: 'relative',
           }}
         >
-          {/* 스와이프 힌트 버튼 */}
+          {/* 우측 상단/중단 페이지 이동 버튼 */}
           <button
             onClick={() => setCurrentPage('trash')}
             style={{
-              position: 'fixed',
-              left: '15px',
+              position: 'absolute',
+              right: '25px',
               top: '50%',
               transform: 'translateY(-50%)',
-              backgroundColor: 'rgba(255,255,255,0.1)',
-              color: '#ccc',
-              border: '1px solid rgba(255,255,255,0.2)',
-              padding: '8px 12px',
+              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: '#e0e0e0',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
+              padding: '10px 16px',
               borderRadius: '20px',
               cursor: 'pointer',
               zIndex: 40,
-              fontSize: '12px',
+              fontSize: '13px',
+              backdropFilter: 'blur(4px)',
             }}
           >
-            ◀ 버린 종이들 모아보기
+            버린 종이들 모아보기 ▶
           </button>
 
-          {/* 쓰레기통 */}
+          {/* 우측 상단 쓰레기통 */}
           <div
             ref={binRef}
             style={{
-              position: 'fixed',
+              position: 'absolute',
               top: '25px',
               right: '30px',
-              width: '140px',
-              zIndex: 30,
+              width: '110px',
+              zIndex: 35,
               transition: 'transform 0.2s ease',
               transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
               pointerEvents: 'none',
@@ -691,17 +692,17 @@ export default function TypewriterApp() {
             />
           </div>
 
-          {/* 하단 버튼 그룹 */}
+          {/* 하단 중앙 버튼 그룹 */}
           <div
             style={{
-              position: 'fixed',
-              bottom: '8vh',
+              position: 'absolute',
+              bottom: '30px',
               left: '50%',
               transform: 'translateX(-50%)',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px',
-              width: 'calc(100% - 40px)',
+              width: '90%',
               maxWidth: '380px',
               zIndex: 50,
             }}
@@ -802,7 +803,7 @@ export default function TypewriterApp() {
           </div>
         </section>
 
-        {/* ================= 2. 버린 종이들 모아보기 공간 (좌측 스와이프) ================= */}
+        {/* ================= 2. 버린 종이들 모아보기 공간 (우측 화면) ================= */}
         <section
           style={{
             width: '100vw',
@@ -828,7 +829,7 @@ export default function TypewriterApp() {
               cursor: 'pointer',
             }}
           >
-            ▶ 타자기로 돌아가기
+            ◀ 타자기로 돌아가기
           </button>
 
           <header style={{ textAlign: 'center', marginTop: '30px', marginBottom: '30px' }}>
