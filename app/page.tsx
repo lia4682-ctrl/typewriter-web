@@ -4,6 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 export default function TypewriterApp() {
   const [text, setText] = useState('');
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
@@ -22,6 +23,20 @@ export default function TypewriterApp() {
       window.removeEventListener('click', initAudio);
     };
   }, []);
+
+  // 커서가 있는 줄을 입력 영역 하단(타격선)에 정확히 맞추는 스크롤 제어
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+
+    const lineHeight = 32;
+    const selectionStart = el.selectionStart;
+    const linesBeforeCursor = text.substring(0, selectionStart).split('\n').length;
+    
+    // 현재 작성 중인 줄이 입력창 최하단 타격선에 걸치도록 scrollTop 계산
+    const targetScrollTop = Math.max(0, (linesBeforeCursor - 1) * lineHeight);
+    el.scrollTop = targetScrollTop;
+  }, [text]);
 
   const playTypeSound = () => {
     if (!audioCtxRef.current) return;
@@ -97,10 +112,6 @@ export default function TypewriterApp() {
     URL.revokeObjectURL(url);
   };
 
-  const lines = text.split('\n');
-  const lineCount = lines.length;
-  const lineHeight = 32; // 한 줄 높이 (px)
-
   return (
     <main style={{
       minHeight: '100vh',
@@ -122,70 +133,98 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 상단 뷰포트 액자 영역 */}
+        {/* 실제 종이 영역에 채워지는 뷰포트 */}
         <div style={{
           position: 'absolute',
-          top: '10%',
-          left: '20%',
-          width: '60%',
-          height: '180px',
-          overflow: 'hidden',
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)'
+          top: '15%',
+          left: '28%',
+          width: '44%',
+          height: '210px',
+          overflow: 'hidden'
         }}>
-          {/* 단일 textarea로 통합 및 위치 자동 트랜스폼 */}
           <textarea
+            ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
+            onSelect={() => {
+              // 마우스 클릭이나 키보드로 커서 위치 이동 시 스크롤 동기화
+              if (textareaRef.current) {
+                const el = textareaRef.current;
+                const linesBefore = text.substring(0, el.selectionStart).split('\n').length;
+                el.scrollTop = Math.max(0, (linesBefore - 1) * 32);
+              }
+            }}
             placeholder="타자기를 치듯 글을 작성해보세요..."
             autoFocus
             style={{
-              position: 'absolute',
-              bottom: '20px', // 최하단 타격 지점 고정
-              left: 0,
               width: '100%',
-              height: `${lineCount * lineHeight}px`,
+              height: '100%',
               border: 'none',
               outline: 'none',
               backgroundColor: 'transparent',
               resize: 'none',
               fontFamily: 'Courier New, Courier, monospace',
-              fontSize: '17px',
-              lineHeight: `${lineHeight}px`,
-              color: '#ffffff',
-              caretColor: '#ffffff',
+              fontSize: '16px',
+              lineHeight: '32px',
+              color: '#1a1a1a', // 종이 위 검은 글씨 연출
+              caretColor: '#1a1a1a',
               textAlign: 'center',
-              textShadow: '0 1px 3px rgba(0,0,0,0.9)',
-              padding: 0,
+              padding: '0 10px',
               margin: 0,
-              overflow: 'hidden',
-              // 입력 중인 아랫줄이 bottom: 20px 위치에 오도록 위로 당겨줌
-              transform: `translateY(-${(lineCount - 1) * lineHeight}px)`
+              overflowY: 'hidden' // 스크롤바 감추고 내부 scrollTop으로만 제어
             }}
           />
         </div>
       </div>
 
-      <button
-        onClick={handleSaveTxt}
-        style={{
-          padding: '10px 20px',
-          fontSize: '14px',
-          fontFamily: 'Courier New, monospace',
-          color: '#ffffff',
-          backgroundColor: '#2a2a2a',
-          border: '1px solid #444444',
-          borderRadius: '6px',
-          cursor: 'pointer',
-          transition: 'all 0.2s ease',
-          boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
-        }}
-        onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#3a3a3a')}
-        onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#2a2a2a')}
-      >
-        💾 .txt 저장하기
-      </button>
+      {/* 하단 버튼 영역 */}
+      <div style={{ display: 'flex', gap: '10px' }}>
+        <button
+          onClick={handleSaveTxt}
+          style={{
+            padding: '10px 20px',
+            fontSize: '14px',
+            fontFamily: 'Courier New, monospace',
+            color: '#ffffff',
+            backgroundColor: '#2a2a2a',
+            border: '1px solid #444444',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#3a3a3a')}
+          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#2a2a2a')}
+        >
+          💾 .txt 저장하기
+        </button>
+
+        {/* 후원 버튼 */}
+        <a
+          href="https://buymeacoffee.com/your_id" // 본인의 Buy Me a Coffee / Toss Link 주소로 변경
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '10px 20px',
+            fontSize: '14px',
+            fontFamily: 'Courier New, monospace',
+            color: '#ffffff',
+            backgroundColor: '#FF813F', // Buy Me a Coffee 시그니처 오렌지
+            border: 'none',
+            borderRadius: '6px',
+            textDecoration: 'none',
+            fontWeight: 'bold',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+            transition: 'all 0.2s ease'
+          }}
+        >
+          ☕ 개발자에게 커피 한 잔 선물하기
+        </a>
+      </div>
     </main>
   );
 }
