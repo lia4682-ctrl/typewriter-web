@@ -597,7 +597,7 @@ export default function TypewriterApp() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
           }}
         >
-          ☕ 카카오페이로 커피 한 잔 선물하기
+          ☕ 개발자에게 커피 한 잔 선물하기
         </button>
       </div>
 
