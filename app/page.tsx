@@ -5,7 +5,7 @@ import React, { useState, useRef, useEffect } from 'react';
 export default function TypewriterApp() {
   const [text, setText] = useState('');
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Web Audio API 초기화 (사용자 첫 상호작용 대응)
   useEffect(() => {
@@ -25,10 +25,13 @@ export default function TypewriterApp() {
     };
   }, []);
 
-  // 엔터 입력 등으로 텍스트가 늘어날 때 스크롤을 맨 아래로 내려 문장이 위로 올라가는 효과
+  // 줄바꿈 발생 시 입력 라인이 타자기 바로 위에 고정되도록 스크롤을 맨 아래로 유연하게 밀어 올림
   useEffect(() => {
-    if (textareaRef.current) {
-      textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+    if (containerRef.current) {
+      containerRef.current.scrollTo({
+        top: containerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
   }, [text]);
 
@@ -132,38 +135,44 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 텍스트 입력 영역 (흰 박스 제거, 투명 배경, 흰 글씨) */}
-        <div style={{
-          position: 'absolute',
-          top: '5%',
-          left: '15%',
-          width: '70%',
-          height: '38%',
-          backgroundColor: 'transparent',
-          padding: '10px',
-          boxSizing: 'border-box',
-          overflow: 'hidden'
-        }}>
+        {/* 글자가 타자기 위로 밀려 올라가는 텍스트 뷰포트 영역 */}
+        <div 
+          ref={containerRef}
+          style={{
+            position: 'absolute',
+            bottom: '48%', // 타자기 타격점 기준 위치 고정
+            left: '15%',
+            width: '70%',
+            height: '180px', // 타자기 상단 보일 깊이
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'flex-end', // 항상 작성 중인 라인을 타자기 바로 위에 배치
+            overflowY: 'hidden', // 스크롤바 감추기
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)', // 위로 올라가는 글씨가 자연스럽게 페이드아웃
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)'
+          }}
+        >
           <textarea
-            ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="타자기를 치듯 글을 작성해보세요..."
+            rows={text.split('\n').length || 1}
             style={{
               width: '100%',
-              height: '100%',
               border: 'none',
               outline: 'none',
               backgroundColor: 'transparent',
               resize: 'none',
               fontFamily: 'Courier New, Courier, monospace',
               fontSize: '18px',
-              lineHeight: '1.6',
+              lineHeight: '1.8',
               color: '#ffffff',
               textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-              overflowY: 'auto',
-              scrollbarWidth: 'none' // 스크롤바 숨기기 (Firefox)
+              padding: '0',
+              margin: '0',
+              overflow: 'hidden',
+              transition: 'all 0.15s ease-out'
             }}
           />
         </div>
