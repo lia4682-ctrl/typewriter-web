@@ -28,7 +28,7 @@ interface FrameStyle {
 const FRAME_STYLES: FrameStyle[] = [
   {
     id: 'grid-vintage',
-    name: '📜 빈티지 원고지',
+    name: '📜 vintage ',
     bgColor: '#fbf8f1',
     bgPattern: 'radial-gradient(#e2d9cc 1px, transparent 1px)',
     textColor: '#2b2b2b',
@@ -38,7 +38,7 @@ const FRAME_STYLES: FrameStyle[] = [
   },
   {
     id: 'dark-typewriter',
-    name: '🖤 칠흑 타자기',
+    name: '🖤 type-writer',
     bgColor: '#1e1e1e',
     bgPattern: 'radial-gradient(#333333 1px, transparent 1px)',
     textColor: '#e0e0e0',
@@ -48,7 +48,7 @@ const FRAME_STYLES: FrameStyle[] = [
   },
   {
     id: 'old-letter',
-    name: '☕ 올드 레터',
+    name: '☕ old letter',
     bgColor: '#f4ede2',
     bgPattern: 'linear-gradient(to right, #e2d7c5 1px, transparent 1px)',
     textColor: '#3c2a1e',
@@ -58,7 +58,7 @@ const FRAME_STYLES: FrameStyle[] = [
   },
   {
     id: 'pastel-pink',
-    name: '🌸 감성 파스텔',
+    name: '🌸 mood pastel',
     bgColor: '#fdf0f0',
     bgPattern: 'radial-gradient(#f4c7c7 1px, transparent 1px)',
     textColor: '#4a3535',
@@ -378,7 +378,7 @@ export default function TypewriterApp() {
     if (selectedPaperText) setSelectedPaperText(null);
   };
 
-  // ==================== 드래그 앤 드롭 로직 개선 ====================
+  // ==================== 드래그 앤 드롭 제어 ====================
   const handleStartDrag = (
     clientX: number,
     clientY: number,
@@ -408,7 +408,7 @@ export default function TypewriterApp() {
         prev.map((p) => (p.id === draggingIdRef.current ? { ...p, x: newX, y: newY } : p))
       );
 
-      // 쓰레기통 오버랩 영역 감지
+      // 쓰레기통 오버랩 감지
       if (binRef.current) {
         const binRect = binRef.current.getBoundingClientRect();
         const isOver =
@@ -482,7 +482,6 @@ export default function TypewriterApp() {
   }, []);
 
   const handlePaperClick = (paperText: string) => {
-    // 드래그가 아닌 단순 클릭/터치였을 때만 미리보기 열기
     if (!isMovedRef.current) {
       setSelectedPaperText(paperText);
       setIsDiscardedPreviewOpen(true);
@@ -596,7 +595,7 @@ export default function TypewriterApp() {
             버린 종이들 모아보기 ▶
           </button>
 
-          {/* 우측 상단 쓰레기통 (확대 크기: 180px, zIndex: 10) */}
+          {/* 우측 상단 쓰레기통 */}
           <div
             ref={binRef}
             style={{
@@ -613,7 +612,7 @@ export default function TypewriterApp() {
             <img src="/bin.png" alt="Trash Bin" style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
 
-          {/* 화면 상 바닥에 버려진 종이들 (드래그 가능) */}
+          {/* 화면 상 바닥에 버려진 종이들 (zIndex 30으로 설정하여 선택 잘되도록 보장) */}
           {papers.map((paper) => (
             <div
               key={paper.id}
@@ -626,7 +625,7 @@ export default function TypewriterApp() {
                 top: `${paper.y}px`,
                 width: '110px',
                 transform: `rotate(${paper.rotate}deg)`,
-                zIndex: draggingId === paper.id ? 100 : 25,
+                zIndex: draggingId === paper.id ? 100 : 30,
                 cursor: 'grab',
                 touchAction: 'none',
                 transition: draggingId === paper.id ? 'none' : 'transform 0.1s ease',
@@ -640,8 +639,15 @@ export default function TypewriterApp() {
             </div>
           ))}
 
-          {/* 타자기 프레임 (zIndex: 40으로 배치) */}
-          <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 40 }}>
+          {/* 타자기 프레임 (pointerEvents: 'none'을 주어 종이 클릭 방해 금지) */}
+          <div
+            className="typewriter-wrapper"
+            style={{
+              position: 'relative',
+              zIndex: 20,
+              pointerEvents: 'none', // 타자기 전체의 마우스/터치 이벤트 클릭 투과
+            }}
+          >
             <div
               style={{
                 position: 'absolute',
@@ -652,6 +658,7 @@ export default function TypewriterApp() {
                 padding: '20px 2px 2px 2px',
                 boxSizing: 'border-box',
                 zIndex: 3,
+                pointerEvents: 'auto', // 텍스트 입력창 부분만 클릭 가능하도록 재설정
               }}
             >
               <textarea
@@ -846,7 +853,7 @@ export default function TypewriterApp() {
               📜 버려진 종이 조각들
             </h2>
             <p style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>
-              완전히 영구 삭제된 종이는 나타나지 않습니다.
+              쓰레기통에 버린 종이는 나타나지 않습니다.
             </p>
           </header>
 
@@ -921,7 +928,7 @@ export default function TypewriterApp() {
                         cursor: 'pointer',
                       }}
                     >
-                      영구 삭제
+                      🗑️ 쓰레기통
                     </button>
                   </div>
                 </div>
@@ -1197,7 +1204,7 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* ☕ 후원 모달 (kakao_image.png 적용) */}
+      {/* ☕ 후원 모달 */}
       {isKakaoModalOpen && (
         <div
           onClick={() => setIsKakaoModalOpen(false)}
