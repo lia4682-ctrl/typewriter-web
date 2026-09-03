@@ -194,8 +194,8 @@ export default function TypewriterApp() {
 
     const isLeft = Math.random() > 0.5;
     const newX = isLeft
-      ? Math.floor(Math.random() * (windowWidth * 0.12)) + 10
-      : Math.floor(Math.random() * (windowWidth * 0.12)) + (windowWidth * 0.65);
+      ? Math.floor(Math.random() * (windowWidth * 0.15)) + 10
+      : Math.floor(Math.random() * (windowWidth * 0.15)) + (windowWidth * 0.65);
 
     const newY = Math.floor(Math.random() * 80) + 70;
 
@@ -329,9 +329,8 @@ export default function TypewriterApp() {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        padding: '10px 0 30px 0',
+        padding: '20px 0 50px 0',
         overflowX: 'hidden',
-        overflowY: 'auto',
         userSelect: 'none',
         boxSizing: 'border-box'
       }}
@@ -343,7 +342,7 @@ export default function TypewriterApp() {
           position: 'absolute',
           top: '15px',
           right: '15px',
-          width: 'clamp(100px, 22vw, 160px)',
+          width: '70px',
           zIndex: 30,
           transition: 'transform 0.2s ease',
           transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
@@ -370,7 +369,7 @@ export default function TypewriterApp() {
             position: 'absolute',
             left: `${paper.x}px`,
             top: `${paper.y}px`,
-            width: 'clamp(80px, 18vw, 120px)',
+            width: '75px',
             transform: `rotate(${paper.rotate}deg)`,
             zIndex: draggingId === paper.id ? 100 : 25,
             cursor: 'pointer',
@@ -380,146 +379,168 @@ export default function TypewriterApp() {
         />
       ))}
 
-      {/* 모바일 100% 폭 대응 대형 타자기 */}
+      {/* 300% 스케일 적용 영역 (화면 밖으로 큼직하게 크롭) */}
       <div
         style={{
           position: 'relative',
-          width: '100vw',
-          maxWidth: '850px',
-          aspectRatio: '4 / 3',
-          marginTop: '60px',
+          width: '300vw',
+          maxWidth: '1800px',
+          aspectRatio: '4 / 3.1',
+          marginTop: '30px',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
           zIndex: 1
         }}
       >
-        {/* 입력 레이어 */}
         <div
           style={{
-            position: 'absolute',
-            top: '20%',
-            left: '36.8%',
-            width: '26.4%',
-            height: '12.5%',
-            padding: '2px',
-            boxSizing: 'border-box',
-            zIndex: 3
+            position: 'relative',
+            width: '100%',
+            height: '100%'
           }}
         >
-          <textarea
-            ref={textareaRef}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="타자기를 치듯 글을 작성해보세요..."
-            autoFocus
+          {/* 입력 레이어 */}
+          <div
             style={{
+              position: 'absolute',
+              top: '18.5%',
+              left: '36.8%',
+              width: '26.4%',
+              height: '14%',
+              padding: '2px',
+              boxSizing: 'border-box',
+              zIndex: 3
+            }}
+          >
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="타자기를 치듯 글을 작성해보세요..."
+              autoFocus
+              style={{
+                width: '100%',
+                height: '100%',
+                border: 'none',
+                outline: 'none',
+                backgroundColor: 'transparent',
+                resize: 'none',
+                fontFamily: 'Courier New, Courier, monospace',
+                fontSize: '24px',
+                lineHeight: '1.4',
+                color: '#1a1a1a',
+                textAlign: 'left',
+                padding: 0,
+                margin: 0,
+                overflowY: 'auto',
+                scrollbarWidth: 'none',
+                msOverflowStyle: 'none',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word'
+              }}
+            />
+          </div>
+
+          {/* 타자기 본체 이미지 */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 0,
+              left: 0,
               width: '100%',
               height: '100%',
-              border: 'none',
-              outline: 'none',
-              backgroundColor: 'transparent',
-              resize: 'none',
-              fontFamily: 'Courier New, Courier, monospace',
-              fontSize: 'clamp(13px, 3.5vw, 18px)',
-              lineHeight: '1.35',
-              color: '#1a1a1a',
-              textAlign: 'left',
-              padding: 0,
-              margin: 0,
-              overflowY: 'auto',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word'
+              backgroundImage: 'url("/typewriter-base.png")',
+              backgroundSize: 'contain',
+              backgroundPosition: 'center',
+              backgroundRepeat: 'no-repeat',
+              pointerEvents: 'none',
+              zIndex: 2
             }}
           />
         </div>
-
-        {/* 타자기 본체 이미지 */}
-        <div
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            width: '100%',
-            height: '100%',
-            backgroundImage: 'url("/typewriter-base.png")',
-            backgroundSize: 'contain',
-            backgroundPosition: 'center',
-            backgroundRepeat: 'no-repeat',
-            pointerEvents: 'none',
-            zIndex: 2
-          }}
-        />
       </div>
 
       {/* 하단 버튼 그룹 */}
       <div
         style={{
           display: 'flex',
-          gap: '10px',
-          justifyContent: 'center',
-          alignItems: 'center',
-          flexWrap: 'wrap',
-          width: '90%',
-          maxWidth: '450px',
-          marginTop: '-20px',
+          flexDirection: 'column',
+          gap: '12px',
+          width: 'calc(100% - 40px)',
+          maxWidth: '360px',
+          marginTop: '10px',
           zIndex: 20
         }}
       >
-        <button
-          onClick={handleSaveTxt}
-          style={{
-            flex: '1 1 calc(50% - 5px)',
-            padding: '14px 16px',
-            fontSize: '14px',
-            fontFamily: 'Courier New, monospace',
-            color: '#ffffff',
-            backgroundColor: '#2a2a2a',
-            border: '1px solid #444444',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.4)'
-          }}
-        >
-          💾 .txt 저장하기
-        </button>
+        <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+          <button
+            onClick={handleSaveTxt}
+            style={{
+              flex: 1,
+              padding: '16px 8px',
+              fontSize: '14px',
+              fontFamily: 'Courier New, monospace',
+              color: '#ffffff',
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444444',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.4)'
+            }}
+          >
+            💾 .txt 저장하기
+          </button>
 
-        <button
-          onClick={handleDiscard}
-          style={{
-            flex: '1 1 calc(50% - 5px)',
-            padding: '14px 16px',
-            fontSize: '14px',
-            fontFamily: 'Courier New, monospace',
-            color: '#ffffff',
-            backgroundColor: '#d9534f',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.4)'
-          }}
-        >
-          🗑️ 버리기
-        </button>
+          <button
+            onClick={handleDiscard}
+            style={{
+              flex: 1,
+              padding: '16px 8px',
+              fontSize: '14px',
+              fontFamily: 'Courier New, monospace',
+              color: '#ffffff',
+              backgroundColor: '#d9534f',
+              border: 'none',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              boxShadow: '0 4px 10px rgba(0,0,0,0.4)'
+            }}
+          >
+            🗑️ 버리기
+          </button>
+        </div>
 
         <button
           onClick={() => setIsKakaoModalOpen(true)}
           style={{
-            flex: '1 1 100%',
-            display: 'inline-flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            padding: '14px 16px',
+            width: '100%',
+            padding: '16px 8px',
             fontSize: '14px',
             fontFamily: 'Courier New, monospace',
             color: '#3C1E1E',
             backgroundColor: '#FEE500',
             border: 'none',
-            borderRadius: '8px',
+            borderRadius: '10px',
             fontWeight: 'bold',
             cursor: 'pointer',
-            boxShadow: '0 4px 8px rgba(0,0,0,0.4)'
+            whiteSpace: 'nowrap',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '4px',
+            boxShadow: '0 4px 10px rgba(0,0,0,0.4)'
           }}
         >
           ☕ 카카오페이로 커피 한 잔 선물하기
