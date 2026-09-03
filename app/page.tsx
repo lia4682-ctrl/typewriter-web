@@ -103,10 +103,9 @@ export default function TypewriterApp() {
   };
 
   const lineCount = text.split('\n').length;
-  // 엔터 한 번당 올라가는 세로 이동량 (더 촘촘하게 18px로 조정)
-  const stepHeight = 18;
-  // 최대 상승 제한을 두어 작성 중인 줄이 화면 밖으로 완전히 사라지지 않도록 보호 (최대 70px까지만 상승)
-  const offsetY = Math.min((lineCount - 1) * stepHeight, 70);
+  const lineHeight = 32; // 한 줄 높이 (px)
+  // 가장 아랫줄이 고정된 라인 위치에 머물도록, 줄 수(lineCount - 1)에 정확히 대응하여 위로 슬라이드
+  const offsetY = (lineCount - 1) * lineHeight;
 
   return (
     <main style={{
@@ -130,24 +129,24 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 입력 액자 영역 */}
+        {/* 종이 영역 프레임 (위쪽으로 밀려 올라가는 텍스트 가림) */}
         <div style={{
           position: 'absolute',
-          top: '12%',
+          top: '10%',
           left: '20%',
           width: '60%',
-          height: '130px',
+          height: '160px',
           overflow: 'hidden',
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 15%)'
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%)'
         }}>
-          {/* 실제 텍스트 이동 컨테이너 */}
+          {/* 입력 텍스트 슬라이딩 박스 */}
           <div style={{
             position: 'absolute',
-            bottom: '10px',
+            bottom: '15px', // 작성 중인 가장 아랫줄이 항상 위치할 '타격선' 고정 위치
             width: '100%',
             transform: `translateY(-${offsetY}px)`,
-            transition: 'transform 0.18s ease-out'
+            transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)' // 휙휙 올라가지 않고 쫀쫀하게 착 감기는 모션
           }}>
             <textarea
               value={text}
@@ -163,8 +162,8 @@ export default function TypewriterApp() {
                 backgroundColor: 'transparent',
                 resize: 'none',
                 fontFamily: 'Courier New, Courier, monospace',
-                fontSize: '16px',
-                lineHeight: '24px',
+                fontSize: '17px',
+                lineHeight: `${lineHeight}px`,
                 color: '#ffffff',
                 textAlign: 'center',
                 textShadow: '0 1px 3px rgba(0,0,0,0.9)',
