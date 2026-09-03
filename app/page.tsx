@@ -14,6 +14,61 @@ interface DiscardedPaper {
   sentiment: SentimentType;
 }
 
+// 미리보기용 카드 프레임 스타일 정의
+interface FrameStyle {
+  id: string;
+  name: string;
+  bgColor: string;
+  bgPattern: string;
+  textColor: string;
+  subTextColor: string;
+  borderColor: string;
+  fontFamily: string;
+}
+
+const FRAME_STYLES: FrameStyle[] = [
+  {
+    id: 'grid-vintage',
+    name: '📜 빈티지 원고지',
+    bgColor: '#fbf8f1',
+    bgPattern: 'radial-gradient(#e2d9cc 1px, transparent 1px)',
+    textColor: '#2b2b2b',
+    subTextColor: '#8c8275',
+    borderColor: '#2b2b2b',
+    fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+  },
+  {
+    id: 'dark-typewriter',
+    name: '🖤 칠흑 타자기',
+    bgColor: '#1e1e1e',
+    bgPattern: 'radial-gradient(#333333 1px, transparent 1px)',
+    textColor: '#e0e0e0',
+    subTextColor: '#777777',
+    borderColor: '#444444',
+    fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+  },
+  {
+    id: 'old-letter',
+    name: '☕ 올드 레터',
+    bgColor: '#f4ede2',
+    bgPattern: 'linear-gradient(to right, #e2d7c5 1px, transparent 1px)',
+    textColor: '#3c2a1e',
+    subTextColor: '#9e8976',
+    borderColor: '#3c2a1e',
+    fontFamily: 'serif',
+  },
+  {
+    id: 'pastel-pink',
+    name: '🌸 감성 파스텔',
+    bgColor: '#fdf0f0',
+    bgPattern: 'radial-gradient(#f4c7c7 1px, transparent 1px)',
+    textColor: '#4a3535',
+    subTextColor: '#a88282',
+    borderColor: '#4a3535',
+    fontFamily: 'sans-serif',
+  },
+];
+
 const POSITIVE_WORDS = [
   '좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나',
   '희망', '웃음', '설레', '최고', '완벽', '따뜻', '평화', '성공', '응원', '빛나'
@@ -32,10 +87,14 @@ export default function TypewriterApp() {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
 
+  // 🖼️ 미리보기 & 프레임 관련 상태
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const binRef = useRef<HTMLDivElement | null>(null);
-  const exportCardRef = useRef<HTMLDivElement | null>(null);
+  const previewCardRef = useRef<HTMLDivElement | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
 
@@ -224,23 +283,37 @@ export default function TypewriterApp() {
     URL.revokeObjectURL(url);
   };
 
-  // 🖼️ 이미지로 저장하기 (SNS 공유용 카드 생성)
-  const handleSaveImage = async () => {
+  // 1) 미리보기 모달 열기
+  const handleOpenPreview = () => {
     if (!text.trim()) {
       alert('저장할 내용을 입력해 주세요.');
       return;
     }
+    setIsPreviewOpen(true);
+  };
 
-    if (!exportCardRef.current) return;
+  // 2) 프레임 랜덤 변경
+  const handleRandomFrame = () => {
+    let nextIndex;
+    do {
+      nextIndex = Math.floor(Math.random() * FRAME_STYLES.length);
+    } while (nextIndex === currentFrameIndex && FRAME_STYLES.length > 1);
+    
+    setCurrentFrameIndex(nextIndex);
+  };
+
+  // 3) 미리보기 모달 안에서 실제 이미지 다운로드
+  const handleDownloadImage = async () => {
+    if (!previewCardRef.current) return;
 
     try {
-      const dataUrl = await toPng(exportCardRef.current, {
+      const dataUrl = await toPng(previewCardRef.current, {
         cacheBust: true,
-        pixelRatio: 2, // 고해상도 추출
+        pixelRatio: 2,
       });
 
       const link = document.createElement('a');
-      link.download = `typewriter_${new Date().toISOString().slice(0, 10)}.png`;
+      link.download = `typewriter_${FRAME_STYLES[currentFrameIndex].id}_${new Date().toISOString().slice(0, 10)}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
@@ -396,6 +469,8 @@ export default function TypewriterApp() {
     }
   };
 
+  const currentFrame = FRAME_STYLES[currentFrameIndex];
+
   return (
     <main
       style={{
@@ -434,79 +509,6 @@ export default function TypewriterApp() {
           }
         }
       `}</style>
-
-      {/* 📸 캡처 전용 템플릿 (화면 밖 렌더링) */}
-      <div
-        style={{
-          position: 'absolute',
-          top: '-9999px',
-          left: '-9999px',
-          overflow: 'hidden',
-        }}
-      >
-        <div
-          ref={exportCardRef}
-          style={{
-            width: '600px',
-            minHeight: '800px',
-            backgroundColor: '#fbf8f1',
-            backgroundImage: `radial-gradient(#e2d9cc 1px, transparent 1px)`,
-            backgroundSize: '20px 20px',
-            padding: '60px 50px',
-            boxSizing: 'border-box',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
-            color: '#2b2b2b',
-            boxShadow: '0 0 20px rgba(0,0,0,0.1)',
-          }}
-        >
-          <div>
-            <div
-              style={{
-                fontSize: '14px',
-                color: '#8c8275',
-                borderBottom: '2px solid #2b2b2b',
-                paddingBottom: '12px',
-                marginBottom: '40px',
-                display: 'flex',
-                justifyContent: 'space-between',
-                letterSpacing: '1px',
-              }}
-            >
-              <span>VINTAGE TYPEWRITER</span>
-              <span>{new Date().toISOString().slice(0, 10)}</span>
-            </div>
-
-            <p
-              style={{
-                fontSize: '18px',
-                lineHeight: '1.8',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                margin: 0,
-              }}
-            >
-              {text || '작성된 글이 없습니다.'}
-            </p>
-          </div>
-
-          <div
-            style={{
-              marginTop: '60px',
-              paddingTop: '20px',
-              borderTop: '1px stroke #e2d9cc',
-              fontSize: '12px',
-              color: '#a39888',
-              textAlign: 'center',
-              letterSpacing: '2px',
-            }}
-          >
-            TYPED ON VINTAGE TYPEWRITER
-          </div>
-        </div>
-      </div>
 
       {/* 쓰레기통 */}
       <div
@@ -653,7 +655,7 @@ export default function TypewriterApp() {
           </button>
 
           <button
-            onClick={handleSaveImage}
+            onClick={handleOpenPreview}
             style={{
               flex: 1.2,
               padding: '12px 6px',
@@ -672,7 +674,7 @@ export default function TypewriterApp() {
               boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
             }}
           >
-            🖼️ 이미지 저장
+            🖼️ 미리보기
           </button>
 
           <button
@@ -723,6 +725,165 @@ export default function TypewriterApp() {
           ☕ 카카오페이로 커피 한 잔 선물하기
         </button>
       </div>
+
+      {/* 🖼️ 이미지 미리보기 모달 */}
+      {isPreviewOpen && (
+        <div
+          onClick={() => setIsPreviewOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 250,
+            padding: '20px',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              maxHeight: '90vh',
+              maxWidth: '420px',
+              width: '100%',
+            }}
+          >
+            {/* 실제 이미지로 캡처될 미리보기 카드 */}
+            <div
+              ref={previewCardRef}
+              style={{
+                width: '100%',
+                minHeight: '480px',
+                backgroundColor: currentFrame.bgColor,
+                backgroundImage: currentFrame.bgPattern,
+                backgroundSize: '20px 20px',
+                padding: '35px 30px',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                fontFamily: currentFrame.fontFamily,
+                color: currentFrame.textColor,
+                borderRadius: '8px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                overflowY: 'auto',
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: currentFrame.subTextColor,
+                    borderBottom: `2px solid ${currentFrame.borderColor}`,
+                    paddingBottom: '8px',
+                    marginBottom: '25px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    letterSpacing: '1px',
+                  }}
+                >
+                  <span>VINTAGE TYPEWRITER</span>
+                  <span>{new Date().toISOString().slice(0, 10)}</span>
+                </div>
+
+                <p
+                  style={{
+                    fontSize: '15px',
+                    lineHeight: '1.8',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    margin: 0,
+                  }}
+                >
+                  {text}
+                </p>
+              </div>
+
+              <div
+                style={{
+                  marginTop: '40px',
+                  paddingTop: '15px',
+                  borderTop: `1px stroke ${currentFrame.subTextColor}`,
+                  fontSize: '10px',
+                  color: currentFrame.subTextColor,
+                  textAlign: 'center',
+                  letterSpacing: '2px',
+                }}
+              >
+                TYPED ON VINTAGE TYPEWRITER
+              </div>
+            </div>
+
+            {/* 모달 컨트롤 버튼들 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '10px',
+                width: '100%',
+                marginTop: '15px',
+              }}
+            >
+              <button
+                onClick={handleRandomFrame}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: '1px solid #666',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                🎲 프레임 변경 ({currentFrame.name})
+              </button>
+
+              <button
+                onClick={handleDownloadImage}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: '#3b5998',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '12px',
+                }}
+              >
+                ⬇️ PNG 다운로드
+              </button>
+            </div>
+
+            <button
+              onClick={() => setIsPreviewOpen(false)}
+              style={{
+                marginTop: '10px',
+                width: '100%',
+                padding: '8px',
+                backgroundColor: 'transparent',
+                color: '#aaa',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '12px',
+              }}
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* 작성 글 확인 모달 */}
       {selectedPaperText !== null && (
