@@ -687,8 +687,8 @@ export default function TypewriterApp() {
               fontSize: '13px',
               fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
               color: '#ffffff',
-              backgroundColor: '#3b5998',
-              border: '1px solid #4a69ad',
+              backgroundColor: '#2a2a2a',
+              border: '1px solid #444444',
               borderRadius: '10px',
               cursor: 'pointer',
               whiteSpace: 'nowrap',
@@ -733,11 +733,10 @@ export default function TypewriterApp() {
             padding: '12px 8px',
             fontSize: '13px',
             fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
-            color: '#3C1E1E',
-            backgroundColor: '#FEE500',
-            border: 'none',
+            color: '#ffffff',
+            backgroundColor: '#2a2a2a',
+            border: '1px solid #444444',
             borderRadius: '10px',
-            fontWeight: 'bold',
             cursor: 'pointer',
             whiteSpace: 'nowrap',
             display: 'flex',
@@ -747,7 +746,7 @@ export default function TypewriterApp() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
           }}
         >
-          ☕ 카카오페이로 커피 한 잔 선물하기
+          ☕ 개발자에게 커피 한 잔 사주기
         </button>
       </div>
 
