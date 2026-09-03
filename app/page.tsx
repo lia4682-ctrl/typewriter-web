@@ -37,7 +37,6 @@ export default function TypewriterApp() {
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
 
-  // Client-side localStorage 초기화
   useEffect(() => {
     const savedText = localStorage.getItem('typewriter_text');
     if (savedText) setText(savedText);
@@ -430,7 +429,7 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 무작위 회전 각도가 적용된 쓰레기들 */}
+      {/* 버려진 종이들 */}
       {papers.map((paper) => (
         <img
           key={paper.id}
@@ -482,7 +481,7 @@ export default function TypewriterApp() {
               outline: 'none',
               backgroundColor: 'transparent',
               resize: 'none',
-              fontFamily: 'var(--font-mona), sans-serif',
+              fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
               lineHeight: '1.4',
               color: '#1a1a1a',
               textAlign: 'left',
@@ -536,7 +535,7 @@ export default function TypewriterApp() {
               flex: 1,
               padding: '14px 8px',
               fontSize: '14px',
-              fontFamily: 'var(--font-mona), sans-serif',
+              fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
               color: '#ffffff',
               backgroundColor: '#2a2a2a',
               border: '1px solid #444444',
@@ -559,7 +558,7 @@ export default function TypewriterApp() {
               flex: 1,
               padding: '14px 8px',
               fontSize: '14px',
-              fontFamily: 'var(--font-mona), sans-serif',
+              fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
               color: '#ffffff',
               backgroundColor: '#d9534f',
               border: 'none',
@@ -583,7 +582,7 @@ export default function TypewriterApp() {
             width: '100%',
             padding: '14px 8px',
             fontSize: '14px',
-            fontFamily: 'var(--font-mona), sans-serif',
+            fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
             color: '#3C1E1E',
             backgroundColor: '#FEE500',
             border: 'none',
@@ -632,7 +631,7 @@ export default function TypewriterApp() {
               padding: '25px 20px',
               borderRadius: '8px',
               boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
-              fontFamily: 'var(--font-mona), sans-serif',
+              fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
               lineHeight: '1.6'
             }}
           >
@@ -672,7 +671,7 @@ export default function TypewriterApp() {
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontFamily: 'var(--font-mona), sans-serif'
+                fontFamily: 'var(--font-mona), var(--font-special-elite), serif'
               }}
             >
               닫기
@@ -710,7 +709,7 @@ export default function TypewriterApp() {
               maxWidth: '300px',
               width: '100%',
               boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-              fontFamily: 'var(--font-mona), sans-serif'
+              fontFamily: 'var(--font-mona), var(--font-special-elite), serif'
             }}
           >
             <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#1a1a1a' }}>
@@ -737,7 +736,7 @@ export default function TypewriterApp() {
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontFamily: 'var(--font-mona), sans-serif'
+                fontFamily: 'var(--font-mona), var(--font-special-elite), serif'
               }}
             >
               닫기
