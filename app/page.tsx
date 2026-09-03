@@ -584,7 +584,7 @@ export default function TypewriterApp() {
               padding: '10px 16px',
               borderRadius: '20px',
               cursor: 'pointer',
-              zIndex: 40,
+              zIndex: 50,
               fontSize: '13px',
               backdropFilter: 'blur(4px)',
             }}
@@ -592,15 +592,15 @@ export default function TypewriterApp() {
             버린 종이들 모아보기 ▶
           </button>
 
-          {/* 우측 상단 쓰레기통 */}
+          {/* 우측 상단 쓰레기통 (크기 확대: 180px, zIndex: 10) */}
           <div
             ref={binRef}
             style={{
               position: 'absolute',
-              top: '25px',
-              right: '30px',
-              width: '110px',
-              zIndex: 35,
+              top: '20px',
+              right: '20px',
+              width: '180px',
+              zIndex: 10,
               transition: 'transform 0.2s ease',
               transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
               pointerEvents: 'none',
@@ -632,8 +632,8 @@ export default function TypewriterApp() {
             />
           ))}
 
-          {/* 타자기 프레임 */}
-          <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 1 }}>
+          {/* 타자기 프레임 (zIndex: 40으로 상위 배치) */}
+          <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 40 }}>
             <div
               style={{
                 position: 'absolute',
@@ -1189,7 +1189,7 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* ☕ 후원 모달 */}
+      {/* ☕ 후원 모달 (kakao_image.png 적용) */}
       {isKakaoModalOpen && (
         <div
           onClick={() => setIsKakaoModalOpen(false)}
@@ -1210,19 +1210,32 @@ export default function TypewriterApp() {
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: '#222222',
-              padding: '30px',
+              padding: '24px',
               borderRadius: '16px',
               textAlign: 'center',
               color: '#ffffff',
               maxWidth: '320px',
-              width: '80%',
+              width: '85%',
               border: '1px solid #444444',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
             }}
           >
-            <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>☕ 마음 표현하기</h3>
-            <p style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.5', marginBottom: '20px' }}>
+            <h3 style={{ margin: '0 0 12px 0', fontSize: '18px' }}>☕ 마음 표현하기</h3>
+            <p style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.4', marginBottom: '16px' }}>
               타자기 앱을 응원해 주셔서 감사합니다!
             </p>
+            
+            <div style={{ width: '100%', marginBottom: '16px', borderRadius: '12px', overflow: 'hidden' }}>
+              <img
+                src="/kakao_image.png"
+                alt="카카오 송금"
+                style={{ width: '100%', height: 'auto', display: 'block' }}
+              />
+            </div>
+
             <button
               onClick={() => setIsKakaoModalOpen(false)}
               style={{
@@ -1233,6 +1246,7 @@ export default function TypewriterApp() {
                 border: 'none',
                 borderRadius: '8px',
                 cursor: 'pointer',
+                fontSize: '13px',
               }}
             >
               닫기
