@@ -28,7 +28,7 @@ interface FrameStyle {
 const FRAME_STYLES: FrameStyle[] = [
   {
     id: 'grid-vintage',
-    name: '📜 빈티지 원고지',
+    name: '📜 vintage ',
     bgColor: '#fbf8f1',
     bgPattern: 'radial-gradient(#e2d9cc 1px, transparent 1px)',
     textColor: '#2b2b2b',
@@ -38,7 +38,7 @@ const FRAME_STYLES: FrameStyle[] = [
   },
   {
     id: 'dark-typewriter',
-    name: '🖤 칠흑 타자기',
+    name: '🖤 type letter',
     bgColor: '#1e1e1e',
     bgPattern: 'radial-gradient(#333333 1px, transparent 1px)',
     textColor: '#e0e0e0',
@@ -48,7 +48,7 @@ const FRAME_STYLES: FrameStyle[] = [
   },
   {
     id: 'old-letter',
-    name: '☕ 올드 레터',
+    name: '☕ old style',
     bgColor: '#f4ede2',
     bgPattern: 'linear-gradient(to right, #e2d7c5 1px, transparent 1px)',
     textColor: '#3c2a1e',
@@ -58,7 +58,7 @@ const FRAME_STYLES: FrameStyle[] = [
   },
   {
     id: 'pastel-pink',
-    name: '🌸 감성 파스텔',
+    name: '🌸 mood',
     bgColor: '#fdf0f0',
     bgPattern: 'radial-gradient(#f4c7c7 1px, transparent 1px)',
     textColor: '#4a3535',
@@ -838,7 +838,7 @@ export default function TypewriterApp() {
               📜 버려진 종이 조각들
             </h2>
             <p style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>
-              완전히 영구 삭제된 종이는 나타나지 않습니다.
+              쓰레기통에 버린 종이는 나타나지 않습니다.
             </p>
           </header>
 
@@ -913,7 +913,7 @@ export default function TypewriterApp() {
                         cursor: 'pointer',
                       }}
                     >
-                      영구 삭제
+                      🗑️ 쓰레기통에 버리기
                     </button>
                   </div>
                 </div>
