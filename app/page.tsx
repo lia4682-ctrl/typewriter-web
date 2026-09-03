@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 interface DiscardedPaper {
   id: number;
-  text: string; // 작성했던 글 내용
+  text: string;
   x: number;
   y: number;
   rotate: number;
@@ -23,6 +23,7 @@ export default function TypewriterApp() {
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
 
+  // 1. 오디오 컨텍스트 초기화
   useEffect(() => {
     const initAudio = () => {
       if (!audioCtxRef.current) {
@@ -42,19 +43,11 @@ export default function TypewriterApp() {
     };
   }, []);
 
-  const syncScroll = () => {
-    const el = textareaRef.current;
-    if (!el) return;
-
-    const lineHeight = 32;
-    const linesBeforeCursor = text.substring(0, el.selectionStart).split('\n').length;
-
-    const targetScrollTop = Math.max(0, (linesBeforeCursor - 2) * lineHeight);
-    el.scrollTop = targetScrollTop;
-  };
-
+  // 2. [방법 2 핵심] 텍스트 입력 시 스크롤을 항상 최하단으로 부드럽게 고정
   useEffect(() => {
-    syncScroll();
+    if (textareaRef.current) {
+      textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+    }
   }, [text]);
 
   const playTypeSound = () => {
@@ -174,7 +167,7 @@ export default function TypewriterApp() {
 
     const newPaper: DiscardedPaper = {
       id: Date.now(),
-      text: text, // 작성 내용 저장
+      text: text,
       x: Math.floor(Math.random() * (windowWidth * 0.4)) + 50,
       y: Math.floor(Math.random() * (windowHeight * 0.4)) + 100,
       rotate: Math.floor(Math.random() * 360) - 180
@@ -198,7 +191,6 @@ export default function TypewriterApp() {
     const handleMouseMove = (e: MouseEvent) => {
       if (draggingId === null) return;
 
-      // 마우스가 일정 수치 이상 이동했을 때만 드래그 상태로 인지
       isDraggingRef.current = true;
 
       const newX = e.clientX - dragOffsetRef.current.x;
@@ -252,7 +244,6 @@ export default function TypewriterApp() {
     };
   }, [draggingId]);
 
-  // 단순 클릭 시 텍스트 확인 모달 오픈
   const handlePaperClick = (paperText: string) => {
     if (!isDraggingRef.current) {
       setSelectedPaperText(paperText);
@@ -273,7 +264,7 @@ export default function TypewriterApp() {
       overflow: 'hidden',
       userSelect: 'none'
     }}>
-      {/* 우측 상단 휴지통 */}
+      {/* 휴지통 */}
       <div
         ref={binRef}
         style={{
@@ -295,7 +286,7 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 버려진 종이 아이템들 */}
+      {/* 버려진 종이들 */}
       {papers.map((paper) => (
         <img
           key={paper.id}
@@ -317,32 +308,32 @@ export default function TypewriterApp() {
         />
       ))}
 
-      {/* 타자기 베이스 */}
+      {/* 타자기 전체 영역 */}
       <div style={{
         position: 'relative',
         width: '100%',
         maxWidth: '800px',
         aspectRatio: '4 / 3',
-        backgroundImage: 'url("/typewriter-base.png")',
-        backgroundSize: 'contain',
-        backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat',
         zIndex: 1
       }}>
+        {/* 종이 배경 및 입력 레이어 (위치 고정) */}
         <div style={{
           position: 'absolute',
-          top: '16%',
-          left: '34%',
-          width: '32%',
-          height: '72px',
-          overflow: 'hidden'
+          top: '5%',
+          left: '30%',
+          width: '40%',
+          height: '60%',
+          backgroundColor: '#fcf8f2',
+          boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
+          borderRadius: '2px',
+          padding: '20px',
+          zIndex: 1
         }}>
           <textarea
             ref={textareaRef}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            onSelect={syncScroll}
             placeholder="타자기를 치듯 글을 작성해보세요..."
             autoFocus
             style={{
@@ -356,16 +347,33 @@ export default function TypewriterApp() {
               fontSize: '16px',
               lineHeight: '32px',
               color: '#1a1a1a',
-              caretColor: '#1a1a1a',
               textAlign: 'center',
-              padding: '0 4px',
+              padding: 0,
               margin: 0,
-              overflowY: 'hidden',
+              // Y축 스크롤은 허용하되 스크롤바는 숨김
+              overflowY: 'auto',
+              scrollbarWidth: 'none', // Firefox
+              msOverflowStyle: 'none', // IE/Edge
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word'
             }}
           />
         </div>
+
+        {/* 타자기 본체 이미지 (종이 위에 고정) */}
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          backgroundImage: 'url("/typewriter-base.png")',
+          backgroundSize: 'contain',
+          backgroundPosition: 'center',
+          backgroundRepeat: 'no-repeat',
+          pointerEvents: 'none',
+          zIndex: 2
+        }} />
       </div>
 
       {/* 하단 버튼 그룹 */}
