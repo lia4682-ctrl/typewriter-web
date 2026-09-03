@@ -24,7 +24,6 @@ export default function TypewriterApp() {
     };
   }, []);
 
-  // 커서 위치 기준 스크롤 위치 동기화
   const syncScroll = () => {
     const el = textareaRef.current;
     if (!el) return;
@@ -32,7 +31,6 @@ export default function TypewriterApp() {
     const lineHeight = 32;
     const linesBeforeCursor = text.substring(0, el.selectionStart).split('\n').length;
     
-    // 타격선을 종이 중간-하단 적절한 지점에 맞추기 위해 오프셋 조정 (줄 수 차감 감소)
     const targetScrollTop = Math.max(0, (linesBeforeCursor - 3) * lineHeight);
     el.scrollTop = targetScrollTop;
   };
@@ -136,13 +134,12 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 종이 상단 위치에 영역 정렬 */}
         <div style={{
           position: 'absolute',
           top: '12%',
           left: '28%',
           width: '44%',
-          height: '180px', // 하단 높이 살짝 축소
+          height: '162px', // 기존 180px에서 10% 축소
           overflow: 'hidden'
         }}>
           <textarea
@@ -166,8 +163,8 @@ export default function TypewriterApp() {
               color: '#1a1a1a',
               caretColor: '#1a1a1a',
               textAlign: 'center',
-              paddingTop: '10px',    // 상단 시작 위치 여백
-              paddingBottom: '20px', // 하단 여백 축소
+              paddingTop: '10px',
+              paddingBottom: '8px', // 기존 20px에서 10% 넘게 대폭 축소
               margin: 0,
               overflowY: 'hidden'
             }}
