@@ -97,9 +97,9 @@ export default function TypewriterApp() {
     URL.revokeObjectURL(url);
   };
 
-  // 줄 단위 분리
   const lines = text.split('\n');
-  const lineHeight = 32; // 줄간격 (px)
+  const lineCount = lines.length;
+  const lineHeight = 32; // 한 줄 높이 (px)
 
   return (
     <main style={{
@@ -122,7 +122,7 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 상단 텍스트 잘림 뷰포트 */}
+        {/* 상단 뷰포트 액자 영역 */}
         <div style={{
           position: 'absolute',
           top: '10%',
@@ -133,50 +133,19 @@ export default function TypewriterApp() {
           maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)',
           WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)'
         }}>
-          {/* 이전 줄들 (타격점 위로 슬라이드) */}
-          <div style={{
-            position: 'absolute',
-            bottom: '20px', // 타격점 베이스라인 고정
-            width: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            transition: 'transform 0.15s ease-out',
-            transform: `translateY(-${(lines.length - 1) * lineHeight}px)`
-          }}>
-            {lines.map((line, idx) => (
-              <div
-                key={idx}
-                style={{
-                  height: `${lineHeight}px`,
-                  lineHeight: `${lineHeight}px`,
-                  fontSize: '17px',
-                  fontFamily: 'Courier New, Courier, monospace',
-                  color: '#ffffff',
-                  textAlign: 'center',
-                  textShadow: '0 1px 3px rgba(0,0,0,0.9)',
-                  whiteSpace: 'pre',
-                  width: '100%'
-                }}
-              >
-                {line || ' '}
-              </div>
-            ))}
-          </div>
-
-          {/* 투명 실제 입력창 (포커스 및 키 입력 처리용) */}
+          {/* 단일 textarea로 통합 및 위치 자동 트랜스폼 */}
           <textarea
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={text ? '' : '타자기를 치듯 글을 작성해보세요...'}
+            placeholder="타자기를 치듯 글을 작성해보세요..."
             autoFocus
             style={{
               position: 'absolute',
-              bottom: '20px', // 타격점 베이스라인 완벽 고정
+              bottom: '20px', // 최하단 타격 지점 고정
               left: 0,
               width: '100%',
-              height: `${lineHeight}px`,
+              height: `${lineCount * lineHeight}px`,
               border: 'none',
               outline: 'none',
               backgroundColor: 'transparent',
@@ -184,12 +153,15 @@ export default function TypewriterApp() {
               fontFamily: 'Courier New, Courier, monospace',
               fontSize: '17px',
               lineHeight: `${lineHeight}px`,
-              color: 'transparent', // 실제 커서 입력만 받고 텍스트는 위 렌더링 레이어 사용
-              caretColor: '#ffffff', // 커서는 선명하게 표시
+              color: '#ffffff',
+              caretColor: '#ffffff',
               textAlign: 'center',
+              textShadow: '0 1px 3px rgba(0,0,0,0.9)',
               padding: 0,
               margin: 0,
-              overflow: 'hidden'
+              overflow: 'hidden',
+              // 입력 중인 아랫줄이 bottom: 20px 위치에 오도록 위로 당겨줌
+              transform: `translateY(-${(lineCount - 1) * lineHeight}px)`
             }}
           />
         </div>
