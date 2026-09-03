@@ -103,8 +103,8 @@ export default function TypewriterApp() {
   };
 
   const lineCount = text.split('\n').length;
-  const lineHeight = 28; // 줄 간격 (px)
-  // 작성 중인 마지막 줄이 종이 영역의 하단(타격점) 위치에 오도록 딱 필요한 높이만큼만 이동
+  const lineHeight = 28; // 줄간격
+  // 한 줄 추가될 때마다 정확히 28px씩만 상승
   const offsetY = (lineCount - 1) * lineHeight;
 
   return (
@@ -129,29 +129,30 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 검은 바탕(종이) 내부 뷰포트 영역 */}
+        {/* 절대 허공으로 못 넘어가게 자르는 액자(Paper Window) 영역 */}
         <div style={{
           position: 'absolute',
-          top: '11%', // 검은 종이 바탕의 맨 위쪽 경계
-          left: '26%',
-          width: '48%',
-          height: '115px', // 검은 종이 바탕 내부의 세로 길이
-          overflow: 'hidden', // 종이 영역 밖으로 나가는 글자는 깔끔하게 가림
-          borderRadius: '2px'
+          top: '12%',     // 종이 맨 위 천장 경계선
+          left: '20%',    // 타자기 중앙 폭
+          width: '60%',
+          height: '110px', // 종이 영역 세로 한계값 (이 높이를 넘어가면 잘림)
+          overflow: 'hidden', // 천장/바닥 넘어가는 글자 엄격 잘라내기
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)'
         }}>
-          {/* 입력창 컨테이너 (줄바꿈 시 딱 한 줄 높이만큼만 위로 슬라이드) */}
+          {/* 실제 텍스트 슬라이딩 박스 */}
           <div style={{
             position: 'absolute',
-            bottom: '6px', // 첫 줄 및 현재 작성 중인 줄이 놓일 종이 하단 위치
+            bottom: '0px', // 액자 내부 바닥(현재 타격선) 고정
             width: '100%',
             transform: `translateY(-${offsetY}px)`,
-            transition: 'transform 0.18s ease-out'
+            transition: 'transform 0.18s cubic-bezier(0.25, 1, 0.5, 1)'
           }}>
             <textarea
               value={text}
               onChange={(e) => setText(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="글을 작성해 보세요..."
+              placeholder="타자기를 치듯 글을 작성해보세요..."
               rows={lineCount}
               autoFocus
               style={{
@@ -161,11 +162,11 @@ export default function TypewriterApp() {
                 backgroundColor: 'transparent',
                 resize: 'none',
                 fontFamily: 'Courier New, Courier, monospace',
-                fontSize: '15px',
+                fontSize: '16px',
                 lineHeight: `${lineHeight}px`,
-                color: '#ffffff', // 흰색 글씨
+                color: '#ffffff',
                 textAlign: 'center',
-                textShadow: '0 1px 2px rgba(0,0,0,0.9)',
+                textShadow: '0 1px 3px rgba(0,0,0,0.9)',
                 padding: '0',
                 margin: '0',
                 overflow: 'hidden'
