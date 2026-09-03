@@ -344,7 +344,7 @@ export default function TypewriterApp() {
         }
 
         .typewriter-textarea {
-          font-size: 22px;
+          font-size: 14px;
         }
 
         @media (max-width: 400px) {
@@ -354,12 +354,12 @@ export default function TypewriterApp() {
           }
 
           .typewriter-textarea {
-            font-size: 18px !important;
+            font-size: 13px !important;
           }
         }
       `}</style>
 
-      {/* 키운 쓰레기통 (140px) */}
+      {/* 쓰레기통 */}
       <div
         ref={binRef}
         style={{
@@ -380,7 +380,7 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 키운 버려진 종이들 (110px) */}
+      {/* 버려진 종이들 */}
       {papers.map((paper) => (
         <img
           key={paper.id}
@@ -403,9 +403,9 @@ export default function TypewriterApp() {
         />
       ))}
 
-      {/* 화면 정중앙에 배치된 타자기 프레임 */}
+      {/* 타자기 프레임 */}
       <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 1 }}>
-        {/* 입력 레이어 (상단 여백 12px 추가) */}
+        {/* 입력 레이어 (paddingTop: 20px 적용) */}
         <div
           style={{
             position: 'absolute',
@@ -413,7 +413,7 @@ export default function TypewriterApp() {
             left: '36.8%',
             width: '26.4%',
             height: '14%',
-            padding: '12px 2px 2px 2px',
+            padding: '20px 2px 2px 2px',
             boxSizing: 'border-box',
             zIndex: 3
           }}
@@ -466,7 +466,7 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* PC에서 10% 정도 상단으로 올라온 하단 버튼 그룹 (bottom: 10vh) */}
+      {/* 하단 버튼 그룹 */}
       <div
         style={{
           position: 'fixed',
