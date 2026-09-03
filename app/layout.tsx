@@ -20,7 +20,7 @@ import './globals.css';
 
 // 폰트 설정
 const monaFont = localFont({
-  src: './fonts/Mona-Regular.woff2',
+  src: './fonts/Mona10x12.ttf',
   variable: '--font-mona',
   display: 'swap',
 });
