@@ -5,7 +5,6 @@ import React, { useState, useRef, useEffect } from 'react';
 export default function TypewriterApp() {
   const [text, setText] = useState('');
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
 
   // Web Audio API 초기화
   useEffect(() => {
@@ -24,16 +23,6 @@ export default function TypewriterApp() {
       window.removeEventListener('click', initAudio);
     };
   }, []);
-
-  // 줄바꿈 시 가장 최근 줄(입력선)이 타자기 롤러 위치에 오도록 자동 스크롤
-  useEffect(() => {
-    if (containerRef.current) {
-      containerRef.current.scrollTo({
-        top: containerRef.current.scrollHeight,
-        behavior: 'smooth'
-      });
-    }
-  }, [text]);
 
   // 1. 타자기 타격음
   const playTypeSound = () => {
@@ -113,6 +102,11 @@ export default function TypewriterApp() {
     URL.revokeObjectURL(url);
   };
 
+  // 현재 줄 수 계산 (엔터 기준)
+  const lineCount = text.split('\n').length;
+  // 한 줄 높이(lineHeight: 32px)만큼 translateY로 전체 텍스트를 위로 밀어 올림
+  const offsetY = (lineCount - 1) * 32;
+
   return (
     <main style={{
       minHeight: '100vh',
@@ -135,43 +129,50 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 텍스트 입력 영역 (시작점: 타자기 종이/롤러 상단 영역) */}
-        <div 
-          ref={containerRef}
-          style={{
+        {/* 마스크 영역 (타자기 롤러 위쪽 공간 고정) */}
+        <div style={{
+          position: 'absolute',
+          top: '5%', // 위로 사라지는 텍스트 보일 상단 범위
+          left: '20%',
+          width: '60%',
+          height: '240px', // 타자기 롤러 위쪽 전체 높이
+          overflow: 'hidden',
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)'
+        }}>
+          {/* 실제 입력창: 줄 수가 늘어나면 Y축 이동으로 위로 슬라이딩 */}
+          <div style={{
             position: 'absolute',
-            top: '8%', // 타자기 종이 롤러 바로 위쪽 위치
-            left: '20%',
-            width: '60%',
-            height: '160px', // 글자가 보여지는 세로 영역 크기
-            overflowY: 'hidden',
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%)',
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%)'
-          }}
-        >
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="타자기를 치듯 글을 작성해보세요..."
-            rows={text.split('\n').length || 1}
-            style={{
-              width: '100%',
-              border: 'none',
-              outline: 'none',
-              backgroundColor: 'transparent',
-              resize: 'none',
-              fontFamily: 'Courier New, Courier, monospace',
-              fontSize: '18px',
-              lineHeight: '1.8',
-              color: '#ffffff',
-              textAlign: 'center',
-              textShadow: '0 2px 4px rgba(0,0,0,0.8)',
-              padding: '0',
-              margin: '0',
-              overflow: 'hidden'
-            }}
-          />
+            bottom: '20px', // 첫 줄 입력 시작 위치 (타자기 롤러 바로 위)
+            width: '100%',
+            transform: `translateY(-${offsetY}px)`,
+            transition: 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1)'
+          }}>
+            <textarea
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="타자기를 치듯 글을 작성해보세요..."
+              rows={lineCount}
+              autoFocus
+              style={{
+                width: '100%',
+                border: 'none',
+                outline: 'none',
+                backgroundColor: 'transparent',
+                resize: 'none',
+                fontFamily: 'Courier New, Courier, monospace',
+                fontSize: '18px',
+                lineHeight: '32px',
+                color: '#ffffff',
+                textAlign: 'center',
+                textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+                padding: '0',
+                margin: '0',
+                overflow: 'hidden'
+              }}
+            />
+          </div>
         </div>
       </div>
 
