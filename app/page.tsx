@@ -1,364 +1,404 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { toPng } from 'html-to-image';
 
-interface Paper {
-  id: string;
-  content: string;
-  createdAt: string;
-  status: 'draft' | 'trashed' | 'deleted';
+type SentimentType = 'positive' | 'negative' | 'neutral';
+
+interface DiscardedPaper {
+  id: number;
+  text: string;
+  x: number;
+  y: number;
+  rotate: number;
+  sentiment: SentimentType;
 }
+
+interface FrameStyle {
+  id: string;
+  name: string;
+  bgColor: string;
+  bgPattern: string;
+  textColor: string;
+  subTextColor: string;
+  borderColor: string;
+  fontFamily: string;
+}
+
+const FRAME_STYLES: FrameStyle[] = [
+  {
+    id: 'grid-vintage',
+    name: '📜 빈티지 원고지',
+    bgColor: '#fbf8f1',
+    bgPattern: 'radial-gradient(#e2d9cc 1px, transparent 1px)',
+    textColor: '#2b2b2b',
+    subTextColor: '#8c8275',
+    borderColor: '#2b2b2b',
+    fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+  },
+  {
+    id: 'dark-typewriter',
+    name: '🖤 칠흑 타자기',
+    bgColor: '#1e1e1e',
+    bgPattern: 'radial-gradient(#333333 1px, transparent 1px)',
+    textColor: '#e0e0e0',
+    subTextColor: '#777777',
+    borderColor: '#444444',
+    fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+  },
+  {
+    id: 'old-letter',
+    name: '☕ 올드 레터',
+    bgColor: '#f4ede2',
+    bgPattern: 'linear-gradient(to right, #e2d7c5 1px, transparent 1px)',
+    textColor: '#3c2a1e',
+    subTextColor: '#9e8976',
+    borderColor: '#3c2a1e',
+    fontFamily: 'serif',
+  },
+  {
+    id: 'pastel-pink',
+    name: '🌸 감성 파스텔',
+    bgColor: '#fdf0f0',
+    bgPattern: 'radial-gradient(#f4c7c7 1px, transparent 1px)',
+    textColor: '#4a3535',
+    subTextColor: '#a88282',
+    borderColor: '#4a3535',
+    fontFamily: 'sans-serif',
+  },
+];
+
+const POSITIVE_WORDS = [
+  '좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나',
+  '희망', '웃음', '설레', '최고', '완벽', '따뜻', '평화', '성공', '응원', '빛나'
+];
+
+const NEGATIVE_WORDS = [
+  '싫어', '싫다', '짜증', '슬프', '힘들', '우울', '화나', '아프', '지쳐', '괴로',
+  '포기', '최악', '눈물', '불안', '걱정', '절망', '상처', '외롭', '답답', '후회'
+];
 
 export default function TypewriterApp() {
   const [currentPage, setCurrentPage] = useState<'typewriter' | 'trash'>('typewriter');
-  const [text, setText] = useState('');
-  const [papers, setPapers] = useState<Paper[]>([]);
+  const [text, setText] = useState<string>('');
+  const [papers, setPapers] = useState<DiscardedPaper[]>([]);
+  const [selectedPaperText, setSelectedPaperText] = useState<string | null>(null);
+  const [isHoveredBin, setIsHoveredBin] = useState(false);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
 
-  const audioRef = useRef<HTMLAudioElement | null>(null);
+  // 미리보기 모달 관련 상태
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+  const [isDiscardedPreviewOpen, setIsDiscardedPreviewOpen] = useState(false);
+  const [discardedFrameIndex, setDiscardedFrameIndex] = useState(0);
+
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const audioCtxRef = useRef<AudioContext | null>(null);
+  const binRef = useRef<HTMLDivElement | null>(null);
+  const previewCardRef = useRef<HTMLDivElement | null>(null);
+  const discardedPreviewCardRef = useRef<HTMLDivElement | null>(null);
+
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const isDraggingRef = useRef(false);
+
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
   useEffect(() => {
-    audioRef.current = new Audio('/sounds/typewriter-key.mp3');
-    if (audioRef.current) audioRef.current.volume = 0.4;
+    const savedText = localStorage.getItem('typewriter_text');
+    if (savedText) setText(savedText);
+
+    const savedPapers = localStorage.getItem('typewriter_papers');
+    if (savedPapers) {
+      try {
+        setPapers(JSON.parse(savedPapers));
+      } catch (e) {
+        console.error('Failed to parse saved papers:', e);
+      }
+    }
   }, []);
 
-  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newText = e.target.value;
-    setText(newText);
+  useEffect(() => {
+    localStorage.setItem('typewriter_text', text);
+  }, [text]);
 
-    if (audioRef.current && newText.length > text.length) {
-      audioRef.current.currentTime = 0;
-      audioRef.current.play().catch(() => {});
+  useEffect(() => {
+    localStorage.setItem('typewriter_papers', JSON.stringify(papers));
+  }, [papers]);
+
+  useEffect(() => {
+    const initAudio = () => {
+      if (!audioCtxRef.current) {
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        audioCtxRef.current = new AudioContextClass();
+      }
+    };
+
+    window.addEventListener('keydown', initAudio, { once: true });
+    window.addEventListener('touchstart', initAudio, { once: true });
+    window.addEventListener('click', initAudio, { once: true });
+
+    return () => {
+      window.removeEventListener('keydown', initAudio);
+      window.removeEventListener('touchstart', initAudio);
+      window.removeEventListener('click', initAudio);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
+    }
+  }, [text]);
+
+  const analyzeSentiment = (inputText: string): SentimentType => {
+    let posScore = 0;
+    let negScore = 0;
+
+    POSITIVE_WORDS.forEach((word) => {
+      const matches = inputText.match(new RegExp(word, 'g'));
+      if (matches) posScore += matches.length;
+    });
+
+    NEGATIVE_WORDS.forEach((word) => {
+      const matches = inputText.match(new RegExp(word, 'g'));
+      if (matches) negScore += matches.length;
+    });
+
+    if (posScore === negScore) return 'neutral';
+    return posScore > negScore ? 'positive' : 'negative';
+  };
+
+  const getPaperImageSrc = (sentiment: SentimentType) => {
+    switch (sentiment) {
+      case 'positive':
+        return '/paper_pos.png';
+      case 'negative':
+        return '/paper_neg.png';
+      case 'neutral':
+      default:
+        return '/paper_neu.png';
     }
   };
 
-  const handleThrowAway = () => {
-    if (!text.trim()) return;
+  const playTypeSound = () => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
 
-    const newPaper: Paper = {
-      id: Date.now().toString(),
-      content: text,
-      createdAt: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      status: 'trashed',
-    };
+    const bufferSize = ctx.sampleRate * 0.03;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
 
-    setPapers((prev) => [newPaper, ...prev]);
-    setText('');
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.setValueAtTime(800 + Math.random() * 400, ctx.currentTime);
+    filter.Q.setValueAtTime(3, ctx.currentTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.03);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    noise.start();
   };
 
-  const handlePermanentDelete = (id: string) => {
-    setPapers((prev) =>
-      prev.map((paper) => (paper.id === id ? { ...paper, status: 'deleted' } : paper))
-    );
+  const playBellSound = () => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(1200, ctx.currentTime);
+
+    gain.gain.setValueAtTime(0.3, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.8);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start();
+    osc.stop(ctx.currentTime + 0.8);
+  };
+
+  const playTrashSound = () => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const duration = 0.25;
+    const bufferSize = ctx.sampleRate * duration;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(1200, ctx.currentTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.6, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    noise.start();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === 'Enter') {
+      playBellSound();
+    } else if (e.key.length === 1 || e.key === 'Backspace') {
+      playTypeSound();
+    }
+  };
+
+  const downloadTxtFile = (content: string, filenamePrefix: string) => {
+    if (!content.trim()) return;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filenamePrefix}_${new Date().toISOString().slice(0, 10)}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
   };
 
   const handleSaveTxt = () => {
-    if (!text.trim()) return;
-    const element = document.createElement('a');
-    const file = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    element.href = URL.createObjectURL(file);
-    element.download = `typewriter_${Date.now()}.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-  };
-
-  const handleTouchStart = (e: React.TouchEvent) => {
-    touchStartX.current = e.targetTouches[0].clientX;
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    touchEndX.current = e.targetTouches[0].clientX;
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
-    const swipeDistance = touchStartX.current - touchEndX.current;
-
-    if (swipeDistance > 70 && currentPage === 'typewriter') {
-      setCurrentPage('trash');
+    if (!text.trim()) {
+      alert('저장할 내용을 입력해 주세요.');
+      return;
     }
-    if (swipeDistance < -70 && currentPage === 'trash') {
-      setCurrentPage('typewriter');
-    }
-
-    touchStartX.current = 0;
-    touchEndX.current = 0;
+    downloadTxtFile(text, 'typewriter_note');
   };
 
-  // 영구 삭제('deleted')된 항목 제외하고 버린 종이만 추출
-  const activeTrashedPapers = papers.filter((paper) => paper.status === 'trashed');
+  const handleOpenPreview = () => {
+    if (!text.trim()) {
+      alert('저장할 내용을 입력해 주세요.');
+      return;
+    }
+    setIsPreviewOpen(true);
+  };
 
-  return (
-    <div
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
-      style={{
-        position: 'relative',
-        width: '100vw',
-        height: '100vh',
-        overflow: 'hidden',
-        backgroundColor: '#e8e4d9',
-        color: '#2c2a29',
-        fontFamily: 'serif',
-        userSelect: 'none',
-      }}
-    >
-      {/* 2개의 화면 슬라이더 컨테이너 */}
-      <div
-        style={{
-          display: 'flex',
-          width: '200vw',
-          height: '100%',
-          transition: 'transform 0.5s ease-in-out',
-          transform: currentPage === 'typewriter' ? 'translateX(0)' : 'translateX(-100vw)',
-        }}
-      >
-        {/* ================= 1. 타자기 작성 화면 ================= */}
-        <section
-          style={{
-            width: '100vw',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            justify: 'space-between',
-            padding: '24px',
-            boxSizing: 'border-box',
-            position: 'relative',
-          }}
-        >
-          {/* 오른쪽 힌트 버튼 */}
-          <button
-            onClick={() => setCurrentPage('trash')}
-            style={{
-              position: 'absolute',
-              right: '24px',
-              top: '50%',
-              transform: 'translateY(-50%)',
-              background: 'none',
-              border: 'none',
-              color: '#666',
-              fontSize: '14px',
-              cursor: 'pointer',
-              zIndex: 10,
-            }}
-          >
-            버린 종이들 ◀
-          </button>
+  const handleRandomFrame = () => {
+    let nextIndex;
+    do {
+      nextIndex = Math.floor(Math.random() * FRAME_STYLES.length);
+    } while (nextIndex === currentFrameIndex && FRAME_STYLES.length > 1);
+    setCurrentFrameIndex(nextIndex);
+  };
 
-          {/* 헤더 */}
-          <header style={{ textAlign: 'center', marginTop: '10px' }}>
-            <h1 style={{ fontSize: '24px', letterSpacing: '3px', margin: 0, color: '#423b32' }}>
-              ANALOG TYPEWRITER
-            </h1>
-            <p style={{ fontSize: '12px', color: '#777', marginTop: '6px' }}>
-              좌측으로 스와이프하면 버린 원고를 확인하실 수 있습니다.
-            </p>
-          </header>
+  const handleRandomDiscardedFrame = () => {
+    let nextIndex;
+    do {
+      nextIndex = Math.floor(Math.random() * FRAME_STYLES.length);
+    } while (nextIndex === discardedFrameIndex && FRAME_STYLES.length > 1);
+    setDiscardedFrameIndex(nextIndex);
+  };
 
-          {/* 타자기 원고지 영역 */}
-          <div
-            style={{
-              width: '100%',
-              maxWidth: '650px',
-              height: '55vh',
-              backgroundColor: '#fdfcf7',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.08)',
-              border: '1px solid #d3cebe',
-              borderRadius: '4px',
-              padding: '24px',
-              boxSizing: 'border-box',
-              display: 'flex',
-              flexDirection: 'column',
-            }}
-          >
-            <textarea
-              value={text}
-              onChange={handleTextChange}
-              placeholder="타자기 소리와 함께 글을 작성해보세요..."
-              spellCheck={false}
-              style={{
-                width: '100%',
-                height: '100%',
-                backgroundColor: 'transparent',
-                border: 'none',
-                outline: 'none',
-                resize: 'none',
-                fontFamily: 'monospace',
-                fontSize: '16px',
-                lineHeight: '1.8',
-                color: '#2b2b2b',
-              }}
-            />
-          </div>
+  const downloadImageFromRef = async (ref: React.RefObject<HTMLDivElement>, frameId: string, prefix: string) => {
+    if (!ref.current) return;
+    try {
+      const dataUrl = await toPng(ref.current, { cacheBust: true, pixelRatio: 2 });
+      const link = document.createElement('a');
+      link.download = `${prefix}_${frameId}_${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export image:', err);
+      alert('이미지 생성에 실패했습니다.');
+    }
+  };
 
-          {/* 하단 버튼 */}
-          <footer style={{ display: 'flex', gap: '12px', marginBottom: '16px' }}>
-            <button
-              onClick={handleThrowAway}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#7a6b5d',
-                color: '#fff',
-                border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-            >
-              🗑️ 구겨서 버리기
-            </button>
-            <button
-              onClick={handleSaveTxt}
-              style={{
-                padding: '10px 20px',
-                backgroundColor: '#d6cfbe',
-                color: '#3b352e',
-                border: '1px solid #b8af9c',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                fontSize: '14px',
-              }}
-            >
-              💾 .txt 저장
-            </button>
-          </footer>
-        </section>
+  const handleDownloadImage = () => {
+    downloadImageFromRef(previewCardRef, FRAME_STYLES[currentFrameIndex].id, 'typewriter');
+  };
 
-        {/* ================= 2. 버린 종이들 모음 화면 ================= */}
-        <section
-          style={{
-            width: '100vw',
-            height: '100%',
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'center',
-            padding: '24px',
-            boxSizing: 'border-box',
-            backgroundColor: '#ded8c8',
-            position: 'relative',
-            overflowY: 'auto',
-          }}
-        >
-          {/* 돌아가기 버튼 */}
-          <button
-            onClick={() => setCurrentPage('typewriter')}
-            style={{
-              position: 'absolute',
-              left: '24px',
-              top: '24px',
-              background: 'none',
-              border: 'none',
-              color: '#52483d',
-              fontSize: '14px',
-              cursor: 'pointer',
-            }}
-          >
-            ▶ 타자기로 돌아가기
-          </button>
+  const handleDownloadDiscardedImage = () => {
+    downloadImageFromRef(discardedPreviewCardRef, FRAME_STYLES[discardedFrameIndex].id, 'discarded_note');
+  };
 
-          <header style={{ textAlign: 'center', marginTop: '30px', marginBottom: '24px' }}>
-            <h2 style={{ fontSize: '22px', letterSpacing: '2px', color: '#4a4035', margin: 0 }}>
-              버려진 원고 조각들
-            </h2>
-            <p style={{ fontSize: '12px', color: '#666', marginTop: '6px' }}>
-              영구 삭제 처리되거나 비워진 종이는 이곳에 나타나지 않습니다.
-            </p>
-          </header>
+  const handleDiscard = () => {
+    if (!text.trim()) {
+      alert('버릴 내용이 없습니다.');
+      return;
+    }
 
-          {/* 버려진 원고 그리드 */}
-          <main
-            style={{
-              width: '100%',
-              maxWidth: '850px',
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
-              gap: '20px',
-              paddingBottom: '40px',
-            }}
-          >
-            {activeTrashedPapers.length === 0 ? (
-              <div
-                style={{
-                  gridColumn: '1 / -1',
-                  textAlign: 'center',
-                  padding: '80px 0',
-                  color: '#777',
-                  fontSize: '14px',
-                }}
-              >
-                버려진 원고가 없습니다.
-              </div>
-            ) : (
-              activeTrashedPapers.map((paper, index) => (
-                <div
-                  key={paper.id}
-                  style={{
-                    backgroundColor: '#fcfbf7',
-                    padding: '20px',
-                    borderRadius: '4px',
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.06)',
-                    border: '1px solid #c2baa8',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    height: '200px',
-                    boxSizing: 'border-box',
-                    transform: index % 2 === 0 ? 'rotate(-1.5deg)' : 'rotate(1.5deg)',
-                  }}
-                >
-                  <p
-                    style={{
-                      fontFamily: 'monospace',
-                      fontSize: '13px',
-                      color: '#38332d',
-                      margin: 0,
-                      lineHeight: '1.6',
-                      overflow: 'hidden',
-                      display: '-webkit-box',
-                      WebkitLineClamp: 5,
-                      WebkitBoxOrient: 'vertical',
-                      whiteSpace: 'pre-wrap',
-                    }}
-                  >
-                    {paper.content}
-                  </p>
+    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
+    const isLeft = Math.random() > 0.5;
+    const newX = isLeft
+      ? Math.floor(Math.random() * (windowWidth * 0.12)) + 10
+      : Math.floor(Math.random() * (windowWidth * 0.12)) + (windowWidth * 0.65);
 
-                  <div
-                    style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      fontSize: '11px',
-                      color: '#999',
-                      paddingTop: '10px',
-                      borderTop: '1px solid #eee9dc',
-                    }}
-                  >
-                    <span>{paper.createdAt}</span>
-                    <button
-                      onClick={() => handlePermanentDelete(paper.id)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#e57373',
-                        cursor: 'pointer',
-                        padding: 0,
-                        fontSize: '11px',
-                      }}
-                    >
-                      영구 삭제
-                    </button>
-                  </div>
-                </div>
-              ))
-            )}
-          </main>
-        </section>
-      </div>
-    </div>
-  );
-}
+    const newY = Math.floor(Math.random() * 80) + 70;
+    const sentiment = analyzeSentiment(text);
+    const randomRotate = Math.floor(Math.random() * 360) - 180;
+
+    const newPaper: DiscardedPaper = {
+      id: Date.now(),
+      text: text,
+      x: newX,
+      y: newY,
+      rotate: randomRotate,
+      sentiment: sentiment,
+    };
+
+    setPapers((prev) => [...prev, newPaper]);
+    setText('');
+  };
+
+  const handlePermanentDelete = (id: number) => {
+    playTrashSound();
+    setPapers((prev) => prev.filter((p) => p.id !== id));
+    if (selectedPaperText) setSelectedPaperText(null);
+  };
+
+  const startDrag = (clientX: number, clientY: number, id: number, paperX: number, paperY: number) => {
+    setDraggingId(id);
+    isDraggingRef.current = false;
+    dragOffsetRef.current = {
+      x: clientX - paperX,
+      y: clientY - paperY,
+    };
+  };
+
+  const handleMouseDown = (e: React.MouseEvent, id: number, paperX: number, paperY: number) => {
+    e.preventDefault();
+    startDrag(e.clientX, e.clientY, id, paperX, paperY);
+  };
+
+  const handleTouchStartDrag = (e: React.TouchEvent, id: number, paperX: number, paperY: number) => {
+    const touch = e.touches[0];
+    startDrag(touch.clientX, touch.clientY, id, paperX, paperY);
+  };
+
+  useEffect(() => {
+    const processMove = (clientX: number, clientY: number) => {
+      if (draggingId === null) return;
+      isDraggingRef.current = true;
+
+      const newX = clientX - dragOffsetRef.current.x;
+      const newY = clientY - dragOffset
