@@ -319,7 +319,7 @@ export default function TypewriterApp() {
     setDiscardedFrameIndex(nextIndex);
   };
 
-  const downloadImageFromRef = async (ref: React.RefObject<HTMLDivElement>, frameId: string, prefix: string) => {
+  const downloadImageFromRef = async (ref: React.RefObject<HTMLDivElement | null>, frameId: string, prefix: string) => {
     if (!ref.current) return;
     try {
       const dataUrl = await toPng(ref.current, { cacheBust: true, pixelRatio: 2 });
@@ -483,6 +483,7 @@ export default function TypewriterApp() {
   const handlePaperClick = (paperText: string) => {
     if (!isDraggingRef.current) {
       setSelectedPaperText(paperText);
+      setIsDiscardedPreviewOpen(true);
     }
   };
 
@@ -859,7 +860,7 @@ export default function TypewriterApp() {
               papers.map((paper, index) => (
                 <div
                   key={paper.id}
-                  onClick={() => setSelectedPaperText(paper.text)}
+                  onClick={() => handlePaperClick(paper.text)}
                   style={{
                     backgroundColor: '#262626',
                     border: '1px solid #3d3d3d',
@@ -1007,187 +1008,55 @@ export default function TypewriterApp() {
                 style={{
                   marginTop: '40px',
                   paddingTop: '15px',
-                  borderTop: `1px stroke ${currentFrame.subTextColor}`,
+                  borderTop: `1px dashed ${currentFrame.subTextColor}`,
                   fontSize: '10px',
                   color: currentFrame.subTextColor,
                   textAlign: 'center',
                   letterSpacing: '2px',
                 }}
               >
-                TYPED ON VINTAGE TYPEWRITER
+                {currentFrame.name}
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '15px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', width: '100%' }}>
               <button
                 onClick={handleRandomFrame}
                 style={{
                   flex: 1,
-                  padding: '10px',
-                  backgroundColor: '#444',
-                  color: '#fff',
-                  border: '1px solid #666',
+                  padding: '12px',
+                  backgroundColor: '#333333',
+                  color: '#ffffff',
+                  border: '1px solid #555555',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  fontSize: '12px',
+                  fontSize: '13px',
                 }}
               >
-                🎲 프레임 변경 ({currentFrame.name})
+                🎲 프레임 변경
               </button>
-
               <button
                 onClick={handleDownloadImage}
                 style={{
                   flex: 1,
-                  padding: '10px',
-                  backgroundColor: '#3b5998',
-                  color: '#fff',
+                  padding: '12px',
+                  backgroundColor: '#ffffff',
+                  color: '#000000',
                   border: 'none',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
-                  fontSize: '12px',
+                  fontSize: '13px',
                 }}
               >
-                ⬇️ PNG 다운로드
+                💾 이미지 저장
               </button>
             </div>
-
-            <button
-              onClick={() => setIsPreviewOpen(false)}
-              style={{
-                marginTop: '10px',
-                width: '100%',
-                padding: '8px',
-                backgroundColor: 'transparent',
-                color: '#aaa',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '12px',
-              }}
-            >
-              닫기
-            </button>
           </div>
         </div>
       )}
 
-      {/* 📜 버려진 종이 내용 모달 */}
-      {selectedPaperText !== null && (
-        <div
-          onClick={() => setSelectedPaperText(null)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 200,
-            padding: '20px',
-            boxSizing: 'border-box',
-          }}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            style={{
-              position: 'relative',
-              backgroundColor: '#fbf8f1',
-              color: '#2a2a2a',
-              width: '100%',
-              maxWidth: '450px',
-              padding: '25px 20px',
-              borderRadius: '8px',
-              boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
-              fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
-              lineHeight: '1.6',
-            }}
-          >
-            <div
-              style={{
-                fontSize: '12px',
-                color: '#888',
-                borderBottom: '1px solid #ddd',
-                paddingBottom: '8px',
-                marginBottom: '15px',
-              }}
-            >
-              📜 버려진 원고 내용
-            </div>
-
-            <p
-              style={{
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                maxHeight: '300px',
-                overflowY: 'auto',
-                margin: 0,
-                fontSize: '14px',
-              }}
-            >
-              {selectedPaperText}
-            </p>
-
-            <div style={{ display: 'flex', gap: '8px', marginTop: '20px' }}>
-              <button
-                onClick={() => downloadTxtFile(selectedPaperText, 'discarded_note')}
-                style={{
-                  flex: 1,
-                  padding: '10px 0',
-                  backgroundColor: '#2a2a2a',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
-                }}
-              >
-                💾 .txt 저장
-              </button>
-
-              <button
-                onClick={() => setIsDiscardedPreviewOpen(true)}
-                style={{
-                  flex: 1.2,
-                  padding: '10px 0',
-                  backgroundColor: '#3b5998',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '6px',
-                  cursor: 'pointer',
-                  fontSize: '12px',
-                  fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
-                }}
-              >
-                🖼️ 이미지 미리보기
-              </button>
-            </div>
-
-            <button
-              onClick={() => setSelectedPaperText(null)}
-              style={{
-                marginTop: '10px',
-                width: '100%',
-                padding: '8px 0',
-                backgroundColor: 'transparent',
-                color: '#666',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '12px',
-                fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
-              }}
-            >
-              닫기
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* 🖼️ 버려진 종이 이미지 미리보기 모달 */}
+      {/* 📜 버려진 종이 상세보기/미리보기 모달 */}
       {isDiscardedPreviewOpen && selectedPaperText && (
         <div
           onClick={() => setIsDiscardedPreviewOpen(false)}
@@ -1202,7 +1071,7 @@ export default function TypewriterApp() {
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 260,
+            zIndex: 250,
             padding: '20px',
             boxSizing: 'border-box',
           }}
@@ -1272,72 +1141,55 @@ export default function TypewriterApp() {
                 style={{
                   marginTop: '40px',
                   paddingTop: '15px',
-                  borderTop: `1px stroke ${currentDiscardedFrame.subTextColor}`,
+                  borderTop: `1px dashed ${currentDiscardedFrame.subTextColor}`,
                   fontSize: '10px',
                   color: currentDiscardedFrame.subTextColor,
                   textAlign: 'center',
                   letterSpacing: '2px',
                 }}
               >
-                DISCARDED & RECOVERED NOTE
+                {currentDiscardedFrame.name}
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '15px' }}>
+            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', width: '100%' }}>
               <button
                 onClick={handleRandomDiscardedFrame}
                 style={{
                   flex: 1,
-                  padding: '10px',
-                  backgroundColor: '#444',
-                  color: '#fff',
-                  border: '1px solid #666',
+                  padding: '12px',
+                  backgroundColor: '#333333',
+                  color: '#ffffff',
+                  border: '1px solid #555555',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  fontSize: '12px',
+                  fontSize: '13px',
                 }}
               >
-                🎲 프레임 변경 ({currentDiscardedFrame.name})
+                🎲 프레임 변경
               </button>
-
               <button
                 onClick={handleDownloadDiscardedImage}
                 style={{
                   flex: 1,
-                  padding: '10px',
-                  backgroundColor: '#3b5998',
-                  color: '#fff',
+                  padding: '12px',
+                  backgroundColor: '#ffffff',
+                  color: '#000000',
                   border: 'none',
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
-                  fontSize: '12px',
+                  fontSize: '13px',
                 }}
               >
-                ⬇️ PNG 다운로드
+                💾 이미지 저장
               </button>
             </div>
-
-            <button
-              onClick={() => setIsDiscardedPreviewOpen(false)}
-              style={{
-                marginTop: '10px',
-                width: '100%',
-                padding: '8px',
-                backgroundColor: 'transparent',
-                color: '#aaa',
-                border: 'none',
-                cursor: 'pointer',
-                fontSize: '12px',
-              }}
-            >
-              닫기
-            </button>
           </div>
         </div>
       )}
 
-      {/* 카카오페이 후원 모달 */}
+      {/* ☕ 후원 모달 */}
       {isKakaoModalOpen && (
         <div
           onClick={() => setIsKakaoModalOpen(false)}
@@ -1347,53 +1199,40 @@ export default function TypewriterApp() {
             left: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.75)',
+            backgroundColor: 'rgba(0,0,0,0.8)',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
-            zIndex: 200,
-            padding: '20px',
-            boxSizing: 'border-box',
+            zIndex: 300,
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
-              backgroundColor: '#ffffff',
-              padding: '20px',
-              borderRadius: '12px',
+              backgroundColor: '#222222',
+              padding: '30px',
+              borderRadius: '16px',
               textAlign: 'center',
-              maxWidth: '300px',
-              width: '100%',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-              fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+              color: '#ffffff',
+              maxWidth: '320px',
+              width: '80%',
+              border: '1px solid #444444',
             }}
           >
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#1a1a1a' }}>
-              ☕ 커피 한 잔 사주기
-            </h3>
-            <p style={{ fontSize: '12px', color: '#666', marginBottom: '15px' }}>
-              카카오톡 카메라나 카카오페이 앱으로<br />아래 QR코드를 스캔해 주세요.
+            <h3 style={{ margin: '0 0 15px 0', fontSize: '18px' }}>☕ 마음 표현하기</h3>
+            <p style={{ fontSize: '13px', color: '#ccc', lineHeight: '1.5', marginBottom: '20px' }}>
+              타자기 앱을 응원해 주셔서 감사합니다!
             </p>
-
-            <img
-              src="/kakao_image.png"
-              alt="카카오페이 송금 QR"
-              style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
-            />
-
             <button
               onClick={() => setIsKakaoModalOpen(false)}
               style={{
-                marginTop: '15px',
                 width: '100%',
-                padding: '10px 0',
-                backgroundColor: '#333',
-                color: '#fff',
+                padding: '10px',
+                backgroundColor: '#444444',
+                color: '#ffffff',
                 border: 'none',
-                borderRadius: '6px',
+                borderRadius: '8px',
                 cursor: 'pointer',
-                fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
               }}
             >
               닫기
