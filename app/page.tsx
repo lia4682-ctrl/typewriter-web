@@ -4,7 +4,7 @@ import React, { useState, useRef, useEffect } from 'react';
 
 interface DiscardedPaper {
   id: number;
-  text: string;
+  text: string; // 작성했던 글 내용
   x: number;
   y: number;
   rotate: number;
@@ -22,9 +22,6 @@ export default function TypewriterApp() {
   const binRef = useRef<HTMLDivElement | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
-
-  // 현재 커서가 있는 줄 번호 계산 (0부터 시작)
-  const [currentLineIndex, setCurrentLineIndex] = useState(0);
 
   useEffect(() => {
     const initAudio = () => {
@@ -45,16 +42,19 @@ export default function TypewriterApp() {
     };
   }, []);
 
-  // 텍스트나 커서 위치가 바뀔 때 커서의 현재 줄 위치 업데이트
-  const updateCursorLine = () => {
+  const syncScroll = () => {
     const el = textareaRef.current;
     if (!el) return;
-    const lines = text.substring(0, el.selectionStart).split('\n');
-    setCurrentLineIndex(lines.length - 1);
+
+    const lineHeight = 32;
+    const linesBeforeCursor = text.substring(0, el.selectionStart).split('\n').length;
+
+    const targetScrollTop = Math.max(0, (linesBeforeCursor - 2) * lineHeight);
+    el.scrollTop = targetScrollTop;
   };
 
   useEffect(() => {
-    updateCursorLine();
+    syncScroll();
   }, [text]);
 
   const playTypeSound = () => {
@@ -174,7 +174,7 @@ export default function TypewriterApp() {
 
     const newPaper: DiscardedPaper = {
       id: Date.now(),
-      text: text,
+      text: text, // 작성 내용 저장
       x: Math.floor(Math.random() * (windowWidth * 0.4)) + 50,
       y: Math.floor(Math.random() * (windowHeight * 0.4)) + 100,
       rotate: Math.floor(Math.random() * 360) - 180
@@ -182,7 +182,6 @@ export default function TypewriterApp() {
 
     setPapers((prev) => [...prev, newPaper]);
     setText('');
-    setCurrentLineIndex(0);
   };
 
   const handleMouseDown = (e: React.MouseEvent, id: number, paperX: number, paperY: number) => {
@@ -199,6 +198,7 @@ export default function TypewriterApp() {
     const handleMouseMove = (e: MouseEvent) => {
       if (draggingId === null) return;
 
+      // 마우스가 일정 수치 이상 이동했을 때만 드래그 상태로 인지
       isDraggingRef.current = true;
 
       const newX = e.clientX - dragOffsetRef.current.x;
@@ -252,16 +252,12 @@ export default function TypewriterApp() {
     };
   }, [draggingId]);
 
+  // 단순 클릭 시 텍스트 확인 모달 오픈
   const handlePaperClick = (paperText: string) => {
     if (!isDraggingRef.current) {
       setSelectedPaperText(paperText);
     }
   };
-
-  // 줄바꿈 이동 단위 (px)
-  const lineHeight = 32;
-  // 첫 줄 이후로 줄이 늘어날 때마다 종이가 위로 올라갈 yOffset 계산
-  const paperOffsetY = currentLineIndex * lineHeight;
 
   return (
     <main style={{
@@ -277,7 +273,7 @@ export default function TypewriterApp() {
       overflow: 'hidden',
       userSelect: 'none'
     }}>
-      {/* 휴지통 */}
+      {/* 우측 상단 휴지통 */}
       <div
         ref={binRef}
         style={{
@@ -299,7 +295,7 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 버려진 종이들 */}
+      {/* 버려진 종이 아이템들 */}
       {papers.map((paper) => (
         <img
           key={paper.id}
@@ -321,83 +317,55 @@ export default function TypewriterApp() {
         />
       ))}
 
-      {/* 타자기 전체 영역 */}
+      {/* 타자기 베이스 */}
       <div style={{
         position: 'relative',
         width: '100%',
         maxWidth: '800px',
         aspectRatio: '4 / 3',
+        backgroundImage: 'url("/typewriter-base.png")',
+        backgroundSize: 'contain',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
         zIndex: 1
       }}>
-        {/* 종이 및 입력 레이어 (줄바꿈 시 translateY로 위로 이동) */}
         <div style={{
           position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          transform: `translateY(-${paperOffsetY}px)`,
-          transition: 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1)',
-          zIndex: 1
+          top: '16%',
+          left: '34%',
+          width: '32%',
+          height: '72px',
+          overflow: 'hidden'
         }}>
-          {/* 종이 이미지 / 배경 영역 */}
-          <div style={{
-            position: 'absolute',
-            top: '5%',
-            left: '30%',
-            width: '40%',
-            height: '60%',
-            backgroundColor: '#fcf8f2',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-            borderRadius: '2px',
-            padding: '20px'
-          }}>
-            <textarea
-              ref={textareaRef}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onClick={updateCursorLine}
-              onKeyUp={updateCursorLine}
-              placeholder="타자기를 치듯 글을 작성해보세요..."
-              autoFocus
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-                outline: 'none',
-                backgroundColor: 'transparent',
-                resize: 'none',
-                fontFamily: 'Courier New, Courier, monospace',
-                fontSize: '16px',
-                lineHeight: `${lineHeight}px`,
-                color: '#1a1a1a',
-                caretColor: '#1a1a1a',
-                textAlign: 'center',
-                padding: 0,
-                margin: 0,
-                overflow: 'hidden',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}
-            />
-          </div>
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            onSelect={syncScroll}
+            placeholder="타자기를 치듯 글을 작성해보세요..."
+            autoFocus
+            style={{
+              width: '100%',
+              height: '100%',
+              border: 'none',
+              outline: 'none',
+              backgroundColor: 'transparent',
+              resize: 'none',
+              fontFamily: 'Courier New, Courier, monospace',
+              fontSize: '16px',
+              lineHeight: '32px',
+              color: '#1a1a1a',
+              caretColor: '#1a1a1a',
+              textAlign: 'center',
+              padding: '0 4px',
+              margin: 0,
+              overflowY: 'hidden',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word'
+            }}
+          />
         </div>
-
-        {/* 타자기 본체 이미지 (종이 위에 고정 배치) */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundImage: 'url("/typewriter-base.png")',
-          backgroundSize: 'contain',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          pointerEvents: 'none',
-          zIndex: 2
-        }} />
       </div>
 
       {/* 하단 버튼 그룹 */}
