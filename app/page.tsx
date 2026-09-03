@@ -7,7 +7,7 @@ export default function TypewriterApp() {
   const audioCtxRef = useRef<AudioContext | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  // Web Audio API 초기화 (사용자 첫 상호작용 대응)
+  // Web Audio API 초기화
   useEffect(() => {
     const initAudio = () => {
       if (!audioCtxRef.current) {
@@ -25,7 +25,7 @@ export default function TypewriterApp() {
     };
   }, []);
 
-  // 줄바꿈 발생 시 입력 라인이 타자기 바로 위에 고정되도록 스크롤을 맨 아래로 유연하게 밀어 올림
+  // 줄바꿈 시 가장 최근 줄(입력선)이 타자기 롤러 위치에 오도록 자동 스크롤
   useEffect(() => {
     if (containerRef.current) {
       containerRef.current.scrollTo({
@@ -35,13 +35,13 @@ export default function TypewriterApp() {
     }
   }, [text]);
 
-  // 1. 타자기 타격음 (Impulse Noise)
+  // 1. 타자기 타격음
   const playTypeSound = () => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
     if (ctx.state === 'suspended') ctx.resume();
 
-    const bufferSize = ctx.sampleRate * 0.03; // 30ms 짧은 노이즈
+    const bufferSize = ctx.sampleRate * 0.03;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);
     for (let i = 0; i < bufferSize; i++) {
@@ -67,7 +67,7 @@ export default function TypewriterApp() {
     noise.start();
   };
 
-  // 2. 줄바꿈 종 소리 (Bell Sound)
+  // 2. 줄바꿈 종 소리
   const playBellSound = () => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
@@ -135,21 +135,18 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 글자가 타자기 위로 밀려 올라가는 텍스트 뷰포트 영역 */}
+        {/* 텍스트 입력 영역 (시작점: 타자기 종이/롤러 상단 영역) */}
         <div 
           ref={containerRef}
           style={{
             position: 'absolute',
-            bottom: '48%', // 타자기 타격점 기준 위치 고정
-            left: '15%',
-            width: '70%',
-            height: '180px', // 타자기 상단 보일 깊이
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'flex-end', // 항상 작성 중인 라인을 타자기 바로 위에 배치
-            overflowY: 'hidden', // 스크롤바 감추기
-            maskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)', // 위로 올라가는 글씨가 자연스럽게 페이드아웃
-            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 30%)'
+            top: '8%', // 타자기 종이 롤러 바로 위쪽 위치
+            left: '20%',
+            width: '60%',
+            height: '160px', // 글자가 보여지는 세로 영역 크기
+            overflowY: 'hidden',
+            maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%)',
+            WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%)'
           }}
         >
           <textarea
@@ -168,11 +165,11 @@ export default function TypewriterApp() {
               fontSize: '18px',
               lineHeight: '1.8',
               color: '#ffffff',
+              textAlign: 'center',
               textShadow: '0 2px 4px rgba(0,0,0,0.8)',
               padding: '0',
               margin: '0',
-              overflow: 'hidden',
-              transition: 'all 0.15s ease-out'
+              overflow: 'hidden'
             }}
           />
         </div>
