@@ -481,7 +481,7 @@ export default function TypewriterApp() {
               outline: 'none',
               backgroundColor: 'transparent',
               resize: 'none',
-              fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
+              fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
               lineHeight: '1.4',
               color: '#1a1a1a',
               textAlign: 'left',
@@ -535,7 +535,7 @@ export default function TypewriterApp() {
               flex: 1,
               padding: '14px 8px',
               fontSize: '14px',
-              fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
+              fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
               color: '#ffffff',
               backgroundColor: '#2a2a2a',
               border: '1px solid #444444',
@@ -558,7 +558,7 @@ export default function TypewriterApp() {
               flex: 1,
               padding: '14px 8px',
               fontSize: '14px',
-              fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
+              fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
               color: '#ffffff',
               backgroundColor: '#d9534f',
               border: 'none',
@@ -582,7 +582,7 @@ export default function TypewriterApp() {
             width: '100%',
             padding: '14px 8px',
             fontSize: '14px',
-            fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
+            fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
             color: '#3C1E1E',
             backgroundColor: '#FEE500',
             border: 'none',
@@ -597,7 +597,7 @@ export default function TypewriterApp() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
           }}
         >
-          ☕ 개발자에게 커피 한 잔 선물하기
+          ☕ 개발자에게 커피 한 잔 사주기
         </button>
       </div>
 
@@ -631,7 +631,7 @@ export default function TypewriterApp() {
               padding: '25px 20px',
               borderRadius: '8px',
               boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
-              fontFamily: 'var(--font-mona), var(--font-special-elite), serif',
+              fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
               lineHeight: '1.6'
             }}
           >
@@ -671,7 +671,7 @@ export default function TypewriterApp() {
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontFamily: 'var(--font-mona), var(--font-special-elite), serif'
+                fontFamily: 'var(--font-mona), var(--font-special-elite), monospace'
               }}
             >
               닫기
@@ -709,7 +709,7 @@ export default function TypewriterApp() {
               maxWidth: '300px',
               width: '100%',
               boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
-              fontFamily: 'var(--font-mona), var(--font-special-elite), serif'
+              fontFamily: 'var(--font-mona), var(--font-special-elite), monospace'
             }}
           >
             <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#1a1a1a' }}>
@@ -736,7 +736,7 @@ export default function TypewriterApp() {
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontFamily: 'var(--font-mona), var(--font-special-elite), serif'
+                fontFamily: 'var(--font-mona), var(--font-special-elite), monospace'
               }}
             >
               닫기
