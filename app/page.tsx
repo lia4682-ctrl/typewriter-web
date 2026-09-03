@@ -16,6 +16,7 @@ export default function TypewriterApp() {
   const [selectedPaperText, setSelectedPaperText] = useState<string | null>(null);
   const [isHoveredBin, setIsHoveredBin] = useState(false);
   const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -23,7 +24,6 @@ export default function TypewriterApp() {
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
 
-  // 1. 오디오 컨텍스트 초기화
   useEffect(() => {
     const initAudio = () => {
       if (!audioCtxRef.current) {
@@ -43,7 +43,6 @@ export default function TypewriterApp() {
     };
   }, []);
 
-  // 2. 텍스트 입력 시 스크롤을 항상 최하단으로 고정
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
@@ -165,7 +164,6 @@ export default function TypewriterApp() {
     const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
     const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
 
-    // 타자기 본체 영역을 피해서 화면 좌/우 상단 사이드로 배치
     const isLeft = Math.random() > 0.5;
     const newX = isLeft
       ? Math.floor(Math.random() * (windowWidth * 0.2)) + 20
@@ -259,19 +257,21 @@ export default function TypewriterApp() {
   };
 
   return (
-    <main style={{
-      position: 'relative',
-      minHeight: '100vh',
-      backgroundColor: '#121212',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      padding: '20px',
-      gap: '15px',
-      overflow: 'hidden',
-      userSelect: 'none'
-    }}>
+    <main
+      style={{
+        position: 'relative',
+        minHeight: '100vh',
+        backgroundColor: '#121212',
+        display: 'flex',
+        flexDirection: 'column',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '20px',
+        gap: '15px',
+        overflow: 'hidden',
+        userSelect: 'none'
+      }}
+    >
       {/* 휴지통 */}
       <div
         ref={binRef}
@@ -317,23 +317,27 @@ export default function TypewriterApp() {
       ))}
 
       {/* 타자기 전체 영역 */}
-      <div style={{
-        position: 'relative',
-        width: '100%',
-        maxWidth: '800px',
-        aspectRatio: '4 / 3',
-        zIndex: 1
-      }}>
-        {/* 입력 레이어 (종이 배경 제거, 투명 배경 유지) */}
-        <div style={{
-          position: 'absolute',
-          top: '5%',
-          left: '30%',
-          width: '40%',
-          height: '60%',
-          padding: '20px',
+      <div
+        style={{
+          position: 'relative',
+          width: '100%',
+          maxWidth: '800px',
+          aspectRatio: '4 / 3',
           zIndex: 1
-        }}>
+        }}
+      >
+        {/* 입력 레이어 */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '5%',
+            left: '30%',
+            width: '40%',
+            height: '60%',
+            padding: '20px',
+            zIndex: 1
+          }}
+        >
           <textarea
             ref={textareaRef}
             value={text}
@@ -356,8 +360,8 @@ export default function TypewriterApp() {
               padding: 0,
               margin: 0,
               overflowY: 'auto',
-              scrollbarWidth: 'none', // Firefox
-              msOverflowStyle: 'none', // IE/Edge
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
               whiteSpace: 'pre-wrap',
               wordBreak: 'break-word'
             }}
@@ -365,19 +369,21 @@ export default function TypewriterApp() {
         </div>
 
         {/* 타자기 본체 이미지 */}
-        <div style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          backgroundImage: 'url("/typewriter-base.png")',
-          backgroundSize: 'contain',
-          backgroundPosition: 'center',
-          backgroundRepeat: 'no-repeat',
-          pointerEvents: 'none',
-          zIndex: 2
-        }} />
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundImage: 'url("/typewriter-base.png")',
+            backgroundSize: 'contain',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            pointerEvents: 'none',
+            zIndex: 2
+          }}
+        />
       </div>
 
       {/* 하단 버튼 그룹 */}
@@ -422,10 +428,8 @@ export default function TypewriterApp() {
           🗑️ 버리기
         </button>
 
-        <a
-          href="https://buymeacoffee.com/your_id"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => setIsKakaoModalOpen(true)}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -433,18 +437,18 @@ export default function TypewriterApp() {
             padding: '10px 20px',
             fontSize: '14px',
             fontFamily: 'Courier New, monospace',
-            color: '#ffffff',
-            backgroundColor: '#FF813F',
+            color: '#3C1E1E',
+            backgroundColor: '#FEE500',
             border: 'none',
             borderRadius: '6px',
-            textDecoration: 'none',
             fontWeight: 'bold',
+            cursor: 'pointer',
             boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
             transition: 'all 0.2s ease'
           }}
         >
-          ☕ 개발자에게 커피 한 잔 선물하기
-        </a>
+          ☕ 카카오페이로 커피 한 잔 선물하기
+        </button>
       </div>
 
       {/* 작성 글 확인 모달 */}
@@ -480,24 +484,28 @@ export default function TypewriterApp() {
               lineHeight: '1.6'
             }}
           >
-            <div style={{
-              fontSize: '12px',
-              color: '#888',
-              borderBottom: '1px solid #ddd',
-              paddingBottom: '8px',
-              marginBottom: '15px'
-            }}>
+            <div
+              style={{
+                fontSize: '12px',
+                color: '#888',
+                borderBottom: '1px solid #ddd',
+                paddingBottom: '8px',
+                marginBottom: '15px'
+              }}
+            >
               📜 버려진 원고 내용
             </div>
-            
-            <p style={{
-              whiteSpace: 'pre-wrap',
-              wordBreak: 'break-word',
-              maxHeight: '300px',
-              overflowY: 'auto',
-              margin: 0,
-              fontSize: '15px'
-            }}>
+
+            <p
+              style={{
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                maxHeight: '300px',
+                overflowY: 'auto',
+                margin: 0,
+                fontSize: '15px'
+              }}
+            >
               {selectedPaperText}
             </p>
 
@@ -520,95 +528,69 @@ export default function TypewriterApp() {
           </div>
         </div>
       )}
-      // 1. 모달 열림 상태 관리 추가
-const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
 
-// 2. 하단 버튼 영역 수정
-<button
-  onClick={() => setIsKakaoModalOpen(true)}
-  style={{
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: '6px',
-    padding: '10px 20px',
-    fontSize: '14px',
-    fontFamily: 'Courier New, monospace',
-    color: '#3C1E1E',
-    backgroundColor: '#FEE500', // 카카오 노란색
-    border: 'none',
-    borderRadius: '6px',
-    fontWeight: 'bold',
-    cursor: 'pointer',
-    boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
-    transition: 'all 0.2s ease'
-  }}
->
-  ☕ 카카오페이로 커피 한 잔 선물하기
-</button>
+      {/* 카카오페이 QR 모달 */}
+      {isKakaoModalOpen && (
+        <div
+          onClick={() => setIsKakaoModalOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 200,
+            padding: '20px'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              backgroundColor: '#ffffff',
+              padding: '25px',
+              borderRadius: '12px',
+              textAlign: 'center',
+              maxWidth: '320px',
+              width: '100%',
+              boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+            }}
+          >
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '18px', color: '#1a1a1a' }}>
+              💛 카카오페이 후원
+            </h3>
+            <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+              카카오톡 카메라나 카카오페이 앱으로<br />아래 QR코드를 스캔해 주세요.
+            </p>
 
-// 3. 카카오페이 QR 모달 컴포넌트 추가
-{isKakaoModalOpen && (
-  <div
-    onClick={() => setIsKakaoModalOpen(false)}
-    style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      width: '100vw',
-      height: '100vh',
-      backgroundColor: 'rgba(0, 0, 0, 0.7)',
-      display: 'flex',
-      justifyContent: 'center',
-      alignItems: 'center',
-      zIndex: 200,
-      padding: '20px'
-    }}
-  >
-    <div
-      onClick={(e) => e.stopPropagation()}
-      style={{
-        backgroundColor: '#ffffff',
-        padding: '25px',
-        borderRadius: '12px',
-        textAlign: 'center',
-        maxWidth: '320px',
-        width: '100%',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
-      }}
-    >
-      <h3 style={{ margin: '0 0 10px 0', fontSize: '18px', color: '#1a1a1a' }}>
-        💛 카카오페이 후원
-      </h3>
-      <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
-        카카오톡 카메라나 카카오페이 앱으로<br />아래 QR코드를 스캔해 주세요.
-      </p>
-      
-      {/* public/kakao-qr.png 위치에 QR 이미지 저장 필요 */}
-      <img
-        src="/kakao-qr.png"
-        alt="카카오페이 송금 QR"
-        style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
-      />
+            <img
+              src="/kakao_image.png"
+              alt="카카오페이 송금 QR"
+              style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
+            />
 
-      <button
-        onClick={() => setIsKakaoModalOpen(false)}
-        style={{
-          marginTop: '15px',
-          width: '100%',
-          padding: '10px 0',
-          backgroundColor: '#333',
-          color: '#fff',
-          border: 'none',
-          borderRadius: '6px',
-          cursor: 'pointer',
-          fontFamily: 'Courier New, monospace'
-        }}
-      >
-        닫기
-      </button>
-    </div>
-  </div>
-)}
+            <button
+              onClick={() => setIsKakaoModalOpen(false)}
+              style={{
+                marginTop: '15px',
+                width: '100%',
+                padding: '10px 0',
+                backgroundColor: '#333',
+                color: '#fff',
+                border: 'none',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontFamily: 'Courier New, monospace'
+              }}
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
     </main>
   );
 }
