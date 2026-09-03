@@ -243,7 +243,6 @@ export default function TypewriterApp() {
     const newY = Math.floor(Math.random() * 80) + 70;
     const sentiment = analyzeSentiment(text);
 
-    // 360도 범위(-180deg ~ +180deg) 무작위 회전 각도 생성
     const randomRotate = Math.floor(Math.random() * 360) - 180;
 
     const newPaper: DiscardedPaper = {
@@ -318,7 +317,6 @@ export default function TypewriterApp() {
           playTrashSound();
           setPapers((prev) => prev.filter((p) => p.id !== draggingId));
         } else if (isDraggingRef.current) {
-          // 드래그해서 옮겨놓았을 때 각도를 살짝 다채롭게 조절 (-15도~+15도 추가 변형)
           const angleShift = Math.floor(Math.random() * 30) - 15;
           setPapers((prev) =>
             prev.map((p) =>
@@ -488,7 +486,7 @@ export default function TypewriterApp() {
               outline: 'none',
               backgroundColor: 'transparent',
               resize: 'none',
-              fontFamily: 'Courier New, Courier, monospace',
+              fontFamily: 'var(--font-mona), sans-serif',
               lineHeight: '1.4',
               color: '#1a1a1a',
               textAlign: 'left',
@@ -542,7 +540,7 @@ export default function TypewriterApp() {
               flex: 1,
               padding: '14px 8px',
               fontSize: '14px',
-              fontFamily: 'Courier New, monospace',
+              fontFamily: 'var(--font-mona), sans-serif',
               color: '#ffffff',
               backgroundColor: '#2a2a2a',
               border: '1px solid #444444',
@@ -565,7 +563,7 @@ export default function TypewriterApp() {
               flex: 1,
               padding: '14px 8px',
               fontSize: '14px',
-              fontFamily: 'Courier New, monospace',
+              fontFamily: 'var(--font-mona), sans-serif',
               color: '#ffffff',
               backgroundColor: '#d9534f',
               border: 'none',
@@ -589,7 +587,7 @@ export default function TypewriterApp() {
             width: '100%',
             padding: '14px 8px',
             fontSize: '14px',
-            fontFamily: 'Courier New, monospace',
+            fontFamily: 'var(--font-mona), sans-serif',
             color: '#3C1E1E',
             backgroundColor: '#FEE500',
             border: 'none',
@@ -638,7 +636,7 @@ export default function TypewriterApp() {
               padding: '25px 20px',
               borderRadius: '8px',
               boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
-              fontFamily: 'Courier New, monospace',
+              fontFamily: 'var(--font-mona), sans-serif',
               lineHeight: '1.6'
             }}
           >
@@ -678,7 +676,7 @@ export default function TypewriterApp() {
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontFamily: 'Courier New, monospace'
+                fontFamily: 'var(--font-mona), sans-serif'
               }}
             >
               닫기
@@ -715,7 +713,8 @@ export default function TypewriterApp() {
               textAlign: 'center',
               maxWidth: '300px',
               width: '100%',
-              boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+              boxShadow: '0 10px 25px rgba(0,0,0,0.5)',
+              fontFamily: 'var(--font-mona), sans-serif'
             }}
           >
             <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#1a1a1a' }}>
@@ -742,7 +741,7 @@ export default function TypewriterApp() {
                 border: 'none',
                 borderRadius: '6px',
                 cursor: 'pointer',
-                fontFamily: 'Courier New, monospace'
+                fontFamily: 'var(--font-mona), sans-serif'
               }}
             >
               닫기
