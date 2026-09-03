@@ -134,12 +134,12 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 가로 너비 축소 및 중앙 정렬 */}
+        {/* 가로 폭 32%로 추가 축소 및 중앙 정렬 */}
         <div style={{
           position: 'absolute',
           top: '16%',
-          left: '31%',  // 종이 중앙 정렬 조정 (28% -> 31%)
-          width: '38%', // 가로 폭 축소 (44% -> 38%)
+          left: '34%',  // 중앙 정렬 (31% -> 34%)
+          width: '32%', // 너비 추가 축소 (38% -> 32%)
           height: '100px',
           overflow: 'hidden'
         }}>
