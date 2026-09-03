@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-// 감정 타입에 중립(neutral) 추가
 type SentimentType = 'positive' | 'negative' | 'neutral';
 
 interface DiscardedPaper {
@@ -92,7 +91,6 @@ export default function TypewriterApp() {
     }
   }, [text]);
 
-  // 감정 분석 로직 (긍정 / 부정 / 중립)
   const analyzeSentiment = (inputText: string): SentimentType => {
     let posScore = 0;
     let negScore = 0;
@@ -111,7 +109,6 @@ export default function TypewriterApp() {
     return posScore > negScore ? 'positive' : 'negative';
   };
 
-  // 쓰레기 이미지 경로 매핑 함수
   const getPaperImageSrc = (sentiment: SentimentType) => {
     switch (sentiment) {
       case 'positive':
@@ -244,15 +241,17 @@ export default function TypewriterApp() {
       : Math.floor(Math.random() * (windowWidth * 0.12)) + (windowWidth * 0.65);
 
     const newY = Math.floor(Math.random() * 80) + 70;
-
     const sentiment = analyzeSentiment(text);
+
+    // 360도 범위(-180deg ~ +180deg) 무작위 회전 각도 생성
+    const randomRotate = Math.floor(Math.random() * 360) - 180;
 
     const newPaper: DiscardedPaper = {
       id: Date.now(),
       text: text,
       x: newX,
       y: newY,
-      rotate: Math.floor(Math.random() * 60) - 30,
+      rotate: randomRotate,
       sentiment: sentiment
     };
 
@@ -318,6 +317,14 @@ export default function TypewriterApp() {
         if (isOver) {
           playTrashSound();
           setPapers((prev) => prev.filter((p) => p.id !== draggingId));
+        } else if (isDraggingRef.current) {
+          // 드래그해서 옮겨놓았을 때 각도를 살짝 다채롭게 조절 (-15도~+15도 추가 변형)
+          const angleShift = Math.floor(Math.random() * 30) - 15;
+          setPapers((prev) =>
+            prev.map((p) =>
+              p.id === draggingId ? { ...p, rotate: p.rotate + angleShift } : p
+            )
+          );
         }
       }
 
@@ -429,7 +436,7 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 감정에 따라 분기 처리된 버려진 종이들 (긍정 / 부정 / 중립) */}
+      {/* 무작위 회전 각도가 적용된 쓰레기들 */}
       {papers.map((paper) => (
         <img
           key={paper.id}
