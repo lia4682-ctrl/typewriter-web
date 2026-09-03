@@ -2,15 +2,30 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
+interface DiscardedPaper {
+  id: number;
+  x: number; // px 단위 위치
+  y: number; // px 단위 위치
+  rotate: number;
+}
+
 export default function TypewriterApp() {
   const [text, setText] = useState('');
+  const [papers, setPapers] = useState<DiscardedPaper[]>([]);
+  const [isHoveredBin, setIsHoveredBin] = useState(false);
+  const [draggingId, setDraggingId] = useState<number | null>(null);
+
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  const binRef = useRef<HTMLDivElement | null>(null);
+  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   useEffect(() => {
     const initAudio = () => {
       if (!audioCtxRef.current) {
-        const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        const AudioContextClass =
+          window.AudioContext ||
+          (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
         audioCtxRef.current = new AudioContextClass();
       }
     };
@@ -30,8 +45,7 @@ export default function TypewriterApp() {
 
     const lineHeight = 32;
     const linesBeforeCursor = text.substring(0, el.selectionStart).split('\n').length;
-    
-    // 높이가 축소됨에 따라 스크롤 타격점을 2번째 줄로 상향 조절
+
     const targetScrollTop = Math.max(0, (linesBeforeCursor - 2) * lineHeight);
     el.scrollTop = targetScrollTop;
   };
@@ -40,6 +54,7 @@ export default function TypewriterApp() {
     syncScroll();
   }, [text]);
 
+  // 타자기 타격음
   const playTypeSound = () => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
@@ -71,6 +86,7 @@ export default function TypewriterApp() {
     noise.start();
   };
 
+  // 개행 벨소리
   const playBellSound = () => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
@@ -90,6 +106,39 @@ export default function TypewriterApp() {
 
     osc.start();
     osc.stop(ctx.currentTime + 0.8);
+  };
+
+  // 종이 구겨서 버리는 노이즈 효과음
+  const playTrashSound = () => {
+    if (!audioCtxRef.current) return;
+    const ctx = audioCtxRef.current;
+    if (ctx.state === 'suspended') ctx.resume();
+
+    const duration = 0.25;
+    const bufferSize = ctx.sampleRate * duration;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const filter = ctx.createBiquadFilter();
+    filter.type = 'highpass';
+    filter.frequency.setValueAtTime(1200, ctx.currentTime);
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.6, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(ctx.destination);
+
+    noise.start();
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -114,8 +163,98 @@ export default function TypewriterApp() {
     URL.revokeObjectURL(url);
   };
 
+  // 버리기 버튼 클릭 시 무작위 좌표에 종이 배치
+  const handleDiscard = () => {
+    if (!text.trim()) {
+      alert('버릴 내용이 없습니다.');
+      return;
+    }
+
+    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+
+    const newPaper: DiscardedPaper = {
+      id: Date.now(),
+      x: Math.floor(Math.random() * (windowWidth * 0.5)) + 50,
+      y: Math.floor(Math.random() * (windowHeight * 0.5)) + 100,
+      rotate: Math.floor(Math.random() * 360) - 180
+    };
+
+    setPapers((prev) => [...prev, newPaper]);
+    setText('');
+  };
+
+  // --- 드래그 앤 드롭 이벤트 처리 ---
+  const handleMouseDown = (e: React.MouseEvent, id: number, paperX: number, paperY: number) => {
+    e.preventDefault();
+    setDraggingId(id);
+    dragOffsetRef.current = {
+      x: e.clientX - paperX,
+      y: e.clientY - paperY
+    };
+  };
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      if (draggingId === null) return;
+
+      const newX = e.clientX - dragOffsetRef.current.x;
+      const newY = e.clientY - dragOffsetRef.current.y;
+
+      // 위치 업데이트
+      setPapers((prev) =>
+        prev.map((p) => (p.id === draggingId ? { ...p, x: newX, y: newY } : p))
+      );
+
+      // 휴지통 영역 위에 접촉했는지 체크
+      if (binRef.current) {
+        const binRect = binRef.current.getBoundingClientRect();
+        const isOver =
+          e.clientX >= binRect.left &&
+          e.clientX <= binRect.right &&
+          e.clientY >= binRect.top &&
+          e.clientY <= binRect.bottom;
+
+        setIsHoveredBin(isOver);
+      }
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      if (draggingId === null) return;
+
+      if (binRef.current) {
+        const binRect = binRef.current.getBoundingClientRect();
+        const isOver =
+          e.clientX >= binRect.left &&
+          e.clientX <= binRect.right &&
+          e.clientY >= binRect.top &&
+          e.clientY <= binRect.bottom;
+
+        // 휴지통 위에서 손을 놓았을 경우 삭제 및 효과음
+        if (isOver) {
+          playTrashSound();
+          setPapers((prev) => prev.filter((p) => p.id !== draggingId));
+        }
+      }
+
+      setDraggingId(null);
+      setIsHoveredBin(false);
+    };
+
+    if (draggingId !== null) {
+      window.addEventListener('mousemove', handleMouseMove);
+      window.addEventListener('mouseup', handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove);
+      window.removeEventListener('mouseup', handleMouseUp);
+    };
+  }, [draggingId]);
+
   return (
     <main style={{
+      position: 'relative',
       minHeight: '100vh',
       backgroundColor: '#121212',
       display: 'flex',
@@ -123,8 +262,54 @@ export default function TypewriterApp() {
       justifyContent: 'center',
       alignItems: 'center',
       padding: '20px',
-      gap: '15px'
+      gap: '15px',
+      overflow: 'hidden',
+      userSelect: 'none'
     }}>
+      {/* 우측 상단 휴지통 이미지 영역 */}
+      <div
+        ref={binRef}
+        style={{
+          position: 'absolute',
+          top: '20px',
+          right: '20px',
+          width: '40vw',
+          maxWidth: '280px',
+          zIndex: 15,
+          transition: 'transform 0.2s ease',
+          transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
+          pointerEvents: 'none'
+        }}
+      >
+        <img
+          src="/bin.png"
+          alt="Trash Bin"
+          style={{ width: '100%', height: 'auto', display: 'block' }}
+        />
+      </div>
+
+      {/* 버려진 종이 개별 드래그 항목 */}
+      {papers.map((paper) => (
+        <img
+          key={paper.id}
+          src="/paper.png"
+          alt="Discarded Paper"
+          onMouseDown={(e) => handleMouseDown(e, paper.id, paper.x, paper.y)}
+          style={{
+            position: 'absolute',
+            left: `${paper.x}px`,
+            top: `${paper.y}px`,
+            width: '20vw',
+            maxWidth: '160px',
+            transform: `rotate(${paper.rotate}deg)`,
+            zIndex: draggingId === paper.id ? 100 : 20,
+            cursor: draggingId === paper.id ? 'grabbing' : 'grab',
+            transition: draggingId === paper.id ? 'none' : 'transform 0.1s ease'
+          }}
+        />
+      ))}
+
+      {/* 타자기 베이스 이미지 영역 */}
       <div style={{
         position: 'relative',
         width: '100%',
@@ -133,15 +318,15 @@ export default function TypewriterApp() {
         backgroundImage: 'url("/typewriter-base.png")',
         backgroundSize: 'contain',
         backgroundPosition: 'center',
-        backgroundRepeat: 'no-repeat'
+        backgroundRepeat: 'no-repeat',
+        zIndex: 1
       }}>
-        {/* 높이를 72px로 줄여 날짜 텍스트와 절대 겹치지 않도록 조절 */}
         <div style={{
           position: 'absolute',
           top: '16%',
           left: '34%',
           width: '32%',
-          height: '72px', // 높이 축소 (100px -> 72px)
+          height: '72px',
           overflow: 'hidden'
         }}>
           <textarea
@@ -175,7 +360,8 @@ export default function TypewriterApp() {
         </div>
       </div>
 
-      <div style={{ display: 'flex', gap: '10px' }}>
+      {/* 하단 버튼 그룹 */}
+      <div style={{ display: 'flex', gap: '10px', zIndex: 10 }}>
         <button
           onClick={handleSaveTxt}
           style={{
@@ -194,6 +380,26 @@ export default function TypewriterApp() {
           onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#2a2a2a')}
         >
           💾 .txt 저장하기
+        </button>
+
+        <button
+          onClick={handleDiscard}
+          style={{
+            padding: '10px 20px',
+            fontSize: '14px',
+            fontFamily: 'Courier New, monospace',
+            color: '#ffffff',
+            backgroundColor: '#d9534f',
+            border: 'none',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+          }}
+          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#c9302c')}
+          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#d9534f')}
+        >
+          🗑️ 버리기
         </button>
 
         <a
