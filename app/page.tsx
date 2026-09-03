@@ -373,7 +373,7 @@ export default function TypewriterApp() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="타자기를 치듯 글을 작성해보세요..."
+            placeholder="타자기 치듯 글을 써 보세요..."
             autoFocus
             style={{
               width: '100%',
