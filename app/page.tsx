@@ -287,7 +287,7 @@ export default function TypewriterApp() {
 
     const handleTouchMove = (e: TouchEvent) => {
       if (draggingId !== null) {
-        e.preventDefault(); // 스크롤 방지
+        e.preventDefault();
         const touch = e.touches[0];
         processMove(touch.clientX, touch.clientY);
       }
@@ -338,14 +338,14 @@ export default function TypewriterApp() {
         boxSizing: 'border-box'
       }}
     >
-      {/* 휴지통 */}
+      {/* 키워진 휴지통 */}
       <div
         ref={binRef}
         style={{
           position: 'absolute',
-          top: '15px',
-          right: '15px',
-          width: '80px',
+          top: '25px',
+          right: '25px',
+          width: 'clamp(110px, 18vw, 170px)',
           zIndex: 15,
           transition: 'transform 0.2s ease',
           transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
