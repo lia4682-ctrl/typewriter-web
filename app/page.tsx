@@ -11,8 +11,28 @@ interface DiscardedPaper {
 }
 
 export default function TypewriterApp() {
-  const [text, setText] = useState('');
-  const [papers, setPapers] = useState<DiscardedPaper[]>([]);
+  // 1. localStorage에서 초기값 불러오기
+  const [text, setText] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('typewriter_text') || '';
+    }
+    return '';
+  });
+
+  const [papers, setPapers] = useState<DiscardedPaper[]>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('typewriter_papers');
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {
+          console.error('Failed to parse saved papers:', e);
+        }
+      }
+    }
+    return [];
+  });
+
   const [selectedPaperText, setSelectedPaperText] = useState<string | null>(null);
   const [isHoveredBin, setIsHoveredBin] = useState(false);
   const [draggingId, setDraggingId] = useState<number | null>(null);
@@ -23,6 +43,15 @@ export default function TypewriterApp() {
   const binRef = useRef<HTMLDivElement | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
+
+  // 2. 상태 변경 시 localStorage에 자동 저장
+  useEffect(() => {
+    localStorage.setItem('typewriter_text', text);
+  }, [text]);
+
+  useEffect(() => {
+    localStorage.setItem('typewriter_papers', JSON.stringify(papers));
+  }, [papers]);
 
   useEffect(() => {
     const initAudio = () => {
@@ -326,7 +355,7 @@ export default function TypewriterApp() {
           zIndex: 1
         }}
       >
-        {/* 입력 레이어 (종이 박스 안으로 완벽히 구속) */}
+        {/* 입력 레이어 */}
         <div
           style={{
             position: 'absolute',
