@@ -24,18 +24,21 @@ export default function TypewriterApp() {
     };
   }, []);
 
-  // 커서가 있는 줄을 입력 영역 하단(타격선)에 정확히 맞추는 스크롤 제어
-  useEffect(() => {
+  // 커서 위치 기준 스크롤 위치 동기화
+  const syncScroll = () => {
     const el = textareaRef.current;
     if (!el) return;
 
     const lineHeight = 32;
-    const selectionStart = el.selectionStart;
-    const linesBeforeCursor = text.substring(0, selectionStart).split('\n').length;
+    const linesBeforeCursor = text.substring(0, el.selectionStart).split('\n').length;
     
-    // 현재 작성 중인 줄이 입력창 최하단 타격선에 걸치도록 scrollTop 계산
-    const targetScrollTop = Math.max(0, (linesBeforeCursor - 1) * lineHeight);
+    // 타격선을 종이 중간-하단 적절한 지점에 맞추기 위해 오프셋 조정 (줄 수 차감 감소)
+    const targetScrollTop = Math.max(0, (linesBeforeCursor - 3) * lineHeight);
     el.scrollTop = targetScrollTop;
+  };
+
+  useEffect(() => {
+    syncScroll();
   }, [text]);
 
   const playTypeSound = () => {
@@ -133,13 +136,13 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 실제 종이 영역에 채워지는 뷰포트 */}
+        {/* 종이 상단 위치에 영역 정렬 */}
         <div style={{
           position: 'absolute',
-          top: '15%',
+          top: '12%',
           left: '28%',
           width: '44%',
-          height: '210px',
+          height: '180px', // 하단 높이 살짝 축소
           overflow: 'hidden'
         }}>
           <textarea
@@ -147,14 +150,7 @@ export default function TypewriterApp() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            onSelect={() => {
-              // 마우스 클릭이나 키보드로 커서 위치 이동 시 스크롤 동기화
-              if (textareaRef.current) {
-                const el = textareaRef.current;
-                const linesBefore = text.substring(0, el.selectionStart).split('\n').length;
-                el.scrollTop = Math.max(0, (linesBefore - 1) * 32);
-              }
-            }}
+            onSelect={syncScroll}
             placeholder="타자기를 치듯 글을 작성해보세요..."
             autoFocus
             style={{
@@ -167,18 +163,18 @@ export default function TypewriterApp() {
               fontFamily: 'Courier New, Courier, monospace',
               fontSize: '16px',
               lineHeight: '32px',
-              color: '#1a1a1a', // 종이 위 검은 글씨 연출
+              color: '#1a1a1a',
               caretColor: '#1a1a1a',
               textAlign: 'center',
-              padding: '0 10px',
+              paddingTop: '10px',    // 상단 시작 위치 여백
+              paddingBottom: '20px', // 하단 여백 축소
               margin: 0,
-              overflowY: 'hidden' // 스크롤바 감추고 내부 scrollTop으로만 제어
+              overflowY: 'hidden'
             }}
           />
         </div>
       </div>
 
-      {/* 하단 버튼 영역 */}
       <div style={{ display: 'flex', gap: '10px' }}>
         <button
           onClick={handleSaveTxt}
@@ -200,9 +196,8 @@ export default function TypewriterApp() {
           💾 .txt 저장하기
         </button>
 
-        {/* 후원 버튼 */}
         <a
-          href="https://buymeacoffee.com/your_id" // 본인의 Buy Me a Coffee / Toss Link 주소로 변경
+          href="https://buymeacoffee.com/your_id"
           target="_blank"
           rel="noopener noreferrer"
           style={{
@@ -213,7 +208,7 @@ export default function TypewriterApp() {
             fontSize: '14px',
             fontFamily: 'Courier New, monospace',
             color: '#ffffff',
-            backgroundColor: '#FF813F', // Buy Me a Coffee 시그니처 오렌지
+            backgroundColor: '#FF813F',
             border: 'none',
             borderRadius: '6px',
             textDecoration: 'none',
