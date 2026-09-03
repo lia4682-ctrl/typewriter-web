@@ -14,7 +14,6 @@ interface DiscardedPaper {
   sentiment: SentimentType;
 }
 
-// 미리보기용 카드 프레임 스타일 정의
 interface FrameStyle {
   id: string;
   name: string;
@@ -87,14 +86,20 @@ export default function TypewriterApp() {
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
 
-  // 🖼️ 미리보기 & 프레임 관련 상태
+  // 🖼️ 작성 중인 글 미리보기 관련 상태
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
+
+  // 📜 버려진 종이 미리보기 관련 상태
+  const [isDiscardedPreviewOpen, setIsDiscardedPreviewOpen] = useState(false);
+  const [discardedFrameIndex, setDiscardedFrameIndex] = useState(0);
 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const binRef = useRef<HTMLDivElement | null>(null);
   const previewCardRef = useRef<HTMLDivElement | null>(null);
+  const discardedPreviewCardRef = useRef<HTMLDivElement | null>(null);
+
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
 
@@ -269,21 +274,25 @@ export default function TypewriterApp() {
     }
   };
 
+  const downloadTxtFile = (content: string, filenamePrefix: string) => {
+    if (!content.trim()) return;
+    const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filenamePrefix}_${new Date().toISOString().slice(0, 10)}.txt`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
   const handleSaveTxt = () => {
     if (!text.trim()) {
       alert('저장할 내용을 입력해 주세요.');
       return;
     }
-    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `typewriter_note_${new Date().toISOString().slice(0, 10)}.txt`;
-    link.click();
-    URL.revokeObjectURL(url);
+    downloadTxtFile(text, 'typewriter_note');
   };
 
-  // 1) 미리보기 모달 열기
   const handleOpenPreview = () => {
     if (!text.trim()) {
       alert('저장할 내용을 입력해 주세요.');
@@ -292,7 +301,6 @@ export default function TypewriterApp() {
     setIsPreviewOpen(true);
   };
 
-  // 2) 프레임 랜덤 변경
   const handleRandomFrame = () => {
     let nextIndex;
     do {
@@ -302,24 +310,40 @@ export default function TypewriterApp() {
     setCurrentFrameIndex(nextIndex);
   };
 
-  // 3) 미리보기 모달 안에서 실제 이미지 다운로드
-  const handleDownloadImage = async () => {
-    if (!previewCardRef.current) return;
+  const handleRandomDiscardedFrame = () => {
+    let nextIndex;
+    do {
+      nextIndex = Math.floor(Math.random() * FRAME_STYLES.length);
+    } while (nextIndex === discardedFrameIndex && FRAME_STYLES.length > 1);
+    
+    setDiscardedFrameIndex(nextIndex);
+  };
+
+  const downloadImageFromRef = async (ref: React.RefObject<HTMLDivElement>, frameId: string, prefix: string) => {
+    if (!ref.current) return;
 
     try {
-      const dataUrl = await toPng(previewCardRef.current, {
+      const dataUrl = await toPng(ref.current, {
         cacheBust: true,
         pixelRatio: 2,
       });
 
       const link = document.createElement('a');
-      link.download = `typewriter_${FRAME_STYLES[currentFrameIndex].id}_${new Date().toISOString().slice(0, 10)}.png`;
+      link.download = `${prefix}_${frameId}_${new Date().toISOString().slice(0, 10)}.png`;
       link.href = dataUrl;
       link.click();
     } catch (err) {
       console.error('Failed to export image:', err);
       alert('이미지 생성에 실패했습니다.');
     }
+  };
+
+  const handleDownloadImage = () => {
+    downloadImageFromRef(previewCardRef, FRAME_STYLES[currentFrameIndex].id, 'typewriter');
+  };
+
+  const handleDownloadDiscardedImage = () => {
+    downloadImageFromRef(discardedPreviewCardRef, FRAME_STYLES[discardedFrameIndex].id, 'discarded_note');
   };
 
   const handleDiscard = () => {
@@ -470,6 +494,7 @@ export default function TypewriterApp() {
   };
 
   const currentFrame = FRAME_STYLES[currentFrameIndex];
+  const currentDiscardedFrame = FRAME_STYLES[discardedFrameIndex];
 
   return (
     <main
@@ -726,7 +751,7 @@ export default function TypewriterApp() {
         </button>
       </div>
 
-      {/* 🖼️ 이미지 미리보기 모달 */}
+      {/* 🖼️ 작성 중인 글 미리보기 모달 */}
       {isPreviewOpen && (
         <div
           onClick={() => setIsPreviewOpen(false)}
@@ -757,7 +782,6 @@ export default function TypewriterApp() {
               width: '100%',
             }}
           >
-            {/* 실제 이미지로 캡처될 미리보기 카드 */}
             <div
               ref={previewCardRef}
               style={{
@@ -823,7 +847,6 @@ export default function TypewriterApp() {
               </div>
             </div>
 
-            {/* 모달 컨트롤 버튼들 */}
             <div
               style={{
                 display: 'flex',
@@ -885,7 +908,7 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* 작성 글 확인 모달 */}
+      {/* 📜 버려진 종이 확인 및 저장 옵션 모달 */}
       {selectedPaperText !== null && (
         <div
           onClick={() => setSelectedPaperText(null)}
@@ -944,18 +967,218 @@ export default function TypewriterApp() {
               {selectedPaperText}
             </p>
 
+            {/* 버려진 종이 다운로드 버튼 그룹 */}
+            <div
+              style={{
+                display: 'flex',
+                gap: '8px',
+                marginTop: '20px'
+              }}
+            >
+              <button
+                onClick={() => downloadTxtFile(selectedPaperText, 'discarded_note')}
+                style={{
+                  flex: 1,
+                  padding: '10px 0',
+                  backgroundColor: '#2a2a2a',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontFamily: 'var(--font-mona), var(--font-special-elite), monospace'
+                }}
+              >
+                💾 .txt 저장
+              </button>
+
+              <button
+                onClick={() => setIsDiscardedPreviewOpen(true)}
+                style={{
+                  flex: 1.2,
+                  padding: '10px 0',
+                  backgroundColor: '#3b5998',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '6px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                  fontFamily: 'var(--font-mona), var(--font-special-elite), monospace'
+                }}
+              >
+                🖼️ 이미지 미리보기
+              </button>
+            </div>
+
             <button
               onClick={() => setSelectedPaperText(null)}
               style={{
-                marginTop: '20px',
+                marginTop: '10px',
                 width: '100%',
-                padding: '10px 0',
-                backgroundColor: '#333',
-                color: '#fff',
+                padding: '8px 0',
+                backgroundColor: 'transparent',
+                color: '#666',
                 border: 'none',
-                borderRadius: '6px',
                 cursor: 'pointer',
+                fontSize: '12px',
                 fontFamily: 'var(--font-mona), var(--font-special-elite), monospace'
+              }}
+            >
+              닫기
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🖼️ 버려진 종이 전용 이미지 미리보기 모달 */}
+      {isDiscardedPreviewOpen && selectedPaperText && (
+        <div
+          onClick={() => setIsDiscardedPreviewOpen(false)}
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            width: '100vw',
+            height: '100vh',
+            backgroundColor: 'rgba(0, 0, 0, 0.85)',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 260,
+            padding: '20px',
+            boxSizing: 'border-box'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              maxHeight: '90vh',
+              maxWidth: '420px',
+              width: '100%',
+            }}
+          >
+            <div
+              ref={discardedPreviewCardRef}
+              style={{
+                width: '100%',
+                minHeight: '480px',
+                backgroundColor: currentDiscardedFrame.bgColor,
+                backgroundImage: currentDiscardedFrame.bgPattern,
+                backgroundSize: '20px 20px',
+                padding: '35px 30px',
+                boxSizing: 'border-box',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                fontFamily: currentDiscardedFrame.fontFamily,
+                color: currentDiscardedFrame.textColor,
+                borderRadius: '8px',
+                boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                overflowY: 'auto',
+              }}
+            >
+              <div>
+                <div
+                  style={{
+                    fontSize: '12px',
+                    color: currentDiscardedFrame.subTextColor,
+                    borderBottom: `2px solid ${currentDiscardedFrame.borderColor}`,
+                    paddingBottom: '8px',
+                    marginBottom: '25px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    letterSpacing: '1px',
+                  }}
+                >
+                  <span>DISCARDED NOTE</span>
+                  <span>{new Date().toISOString().slice(0, 10)}</span>
+                </div>
+
+                <p
+                  style={{
+                    fontSize: '15px',
+                    lineHeight: '1.8',
+                    whiteSpace: 'pre-wrap',
+                    wordBreak: 'break-word',
+                    margin: 0,
+                  }}
+                >
+                  {selectedPaperText}
+                </p>
+              </div>
+
+              <div
+                style={{
+                  marginTop: '40px',
+                  paddingTop: '15px',
+                  borderTop: `1px stroke ${currentDiscardedFrame.subTextColor}`,
+                  fontSize: '10px',
+                  color: currentDiscardedFrame.subTextColor,
+                  textAlign: 'center',
+                  letterSpacing: '2px',
+                }}
+              >
+                DISCARDED & RECOVERED NOTE
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'flex',
+                gap: '10px',
+                width: '100%',
+                marginTop: '15px',
+              }}
+            >
+              <button
+                onClick={handleRandomDiscardedFrame}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: '#444',
+                  color: '#fff',
+                  border: '1px solid #666',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                🎲 프레임 변경 ({currentDiscardedFrame.name})
+              </button>
+
+              <button
+                onClick={handleDownloadDiscardedImage}
+                style={{
+                  flex: 1,
+                  padding: '10px',
+                  backgroundColor: '#3b5998',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '12px',
+                }}
+              >
+                ⬇️ PNG 다운로드
+              </button>
+            </div>
+
+            <button
+              onClick={() => setIsDiscardedPreviewOpen(false)}
+              style={{
+                marginTop: '10px',
+                width: '100%',
+                padding: '8px',
+                backgroundColor: 'transparent',
+                color: '#aaa',
+                border: 'none',
+                cursor: 'pointer',
+                fontSize: '12px',
               }}
             >
               닫기
