@@ -195,10 +195,10 @@ export default function TypewriterApp() {
 
     const isLeft = Math.random() > 0.5;
     const newX = isLeft
-      ? Math.floor(Math.random() * (windowWidth * 0.15)) + 15
-      : Math.floor(Math.random() * (windowWidth * 0.15)) + (windowWidth * 0.65);
+      ? Math.floor(Math.random() * (windowWidth * 0.12)) + 10
+      : Math.floor(Math.random() * (windowWidth * 0.12)) + (windowWidth * 0.68);
 
-    const newY = Math.floor(Math.random() * (windowHeight * 0.2)) + 30;
+    const newY = Math.floor(Math.random() * (windowHeight * 0.15)) + 20;
 
     const newPaper: DiscardedPaper = {
       id: Date.now(),
@@ -329,24 +329,23 @@ export default function TypewriterApp() {
         backgroundColor: '#121212',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'center',
+        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '15px 10px',
-        gap: '15px',
+        padding: '20px 10px',
         overflow: 'hidden',
         userSelect: 'none',
         boxSizing: 'border-box'
       }}
     >
-      {/* 키워진 휴지통 */}
+      {/* 큼직한 쓰레기통 */}
       <div
         ref={binRef}
         style={{
           position: 'absolute',
-          top: '25px',
-          right: '25px',
-          width: 'clamp(110px, 18vw, 170px)',
-          zIndex: 15,
+          top: '20px',
+          right: '20px',
+          width: 'clamp(120px, 25vw, 180px)',
+          zIndex: 30,
           transition: 'transform 0.2s ease',
           transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
           pointerEvents: 'none'
@@ -372,9 +371,9 @@ export default function TypewriterApp() {
             position: 'absolute',
             left: `${paper.x}px`,
             top: `${paper.y}px`,
-            width: '90px',
+            width: '100px',
             transform: `rotate(${paper.rotate}deg)`,
-            zIndex: draggingId === paper.id ? 100 : 20,
+            zIndex: draggingId === paper.id ? 100 : 25,
             cursor: 'pointer',
             touchAction: 'none',
             transition: draggingId === paper.id ? 'none' : 'transform 0.1s ease'
@@ -382,13 +381,15 @@ export default function TypewriterApp() {
         />
       ))}
 
-      {/* 타자기 전체 영역 */}
+      {/* 대형 타자기 전체 영역 (화면 전체 폭을 넘게 시원하게 확대) */}
       <div
         style={{
           position: 'relative',
-          width: '100%',
-          maxWidth: '800px',
+          width: '135%',
+          maxWidth: '1000px',
           aspectRatio: '4 / 3',
+          marginTop: '10px',
+          marginBottom: '-40px',
           zIndex: 1
         }}
       >
@@ -420,8 +421,8 @@ export default function TypewriterApp() {
               backgroundColor: 'transparent',
               resize: 'none',
               fontFamily: 'Courier New, Courier, monospace',
-              fontSize: '12px',
-              lineHeight: '1.3',
+              fontSize: '14px',
+              lineHeight: '1.35',
               color: '#1a1a1a',
               textAlign: 'left',
               padding: 0,
@@ -453,7 +454,7 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 하단 버튼 그룹 */}
+      {/* 하단 버튼 그룹 (타자기 하단 위에 오버레이) */}
       <div
         style={{
           display: 'flex',
@@ -462,16 +463,16 @@ export default function TypewriterApp() {
           alignItems: 'center',
           flexWrap: 'wrap',
           width: '100%',
-          maxWidth: '500px',
-          zIndex: 10
+          maxWidth: '420px',
+          zIndex: 20,
+          marginBottom: '10px'
         }}
       >
         <button
           onClick={handleSaveTxt}
           style={{
-            flex: '1 1 auto',
-            minWidth: '120px',
-            padding: '12px 16px',
+            flex: '1 1 calc(50% - 5px)',
+            padding: '14px 16px',
             fontSize: '13px',
             fontFamily: 'Courier New, monospace',
             color: '#ffffff',
@@ -479,7 +480,7 @@ export default function TypewriterApp() {
             border: '1px solid #444444',
             borderRadius: '8px',
             cursor: 'pointer',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+            boxShadow: '0 4px 8px rgba(0,0,0,0.4)'
           }}
         >
           💾 .txt 저장하기
@@ -488,9 +489,8 @@ export default function TypewriterApp() {
         <button
           onClick={handleDiscard}
           style={{
-            flex: '1 1 auto',
-            minWidth: '100px',
-            padding: '12px 16px',
+            flex: '1 1 calc(50% - 5px)',
+            padding: '14px 16px',
             fontSize: '13px',
             fontFamily: 'Courier New, monospace',
             color: '#ffffff',
@@ -498,7 +498,7 @@ export default function TypewriterApp() {
             border: 'none',
             borderRadius: '8px',
             cursor: 'pointer',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+            boxShadow: '0 4px 8px rgba(0,0,0,0.4)'
           }}
         >
           🗑️ 버리기
@@ -512,7 +512,7 @@ export default function TypewriterApp() {
             alignItems: 'center',
             justifyContent: 'center',
             gap: '6px',
-            padding: '12px 16px',
+            padding: '14px 16px',
             fontSize: '13px',
             fontFamily: 'Courier New, monospace',
             color: '#3C1E1E',
@@ -521,7 +521,7 @@ export default function TypewriterApp() {
             borderRadius: '8px',
             fontWeight: 'bold',
             cursor: 'pointer',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
+            boxShadow: '0 4px 8px rgba(0,0,0,0.4)'
           }}
         >
           ☕ 카카오페이로 커피 한 잔 선물하기
@@ -538,7 +538,7 @@ export default function TypewriterApp() {
             left: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
@@ -617,7 +617,7 @@ export default function TypewriterApp() {
             left: 0,
             width: '100vw',
             height: '100vh',
-            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            backgroundColor: 'rgba(0, 0, 0, 0.75)',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
