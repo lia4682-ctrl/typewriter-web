@@ -194,8 +194,8 @@ export default function TypewriterApp() {
 
     const isLeft = Math.random() > 0.5;
     const newX = isLeft
-      ? Math.floor(Math.random() * (windowWidth * 0.15)) + 10
-      : Math.floor(Math.random() * (windowWidth * 0.15)) + (windowWidth * 0.65);
+      ? Math.floor(Math.random() * (windowWidth * 0.12)) + 10
+      : Math.floor(Math.random() * (windowWidth * 0.12)) + (windowWidth * 0.65);
 
     const newY = Math.floor(Math.random() * 80) + 70;
 
@@ -335,6 +335,35 @@ export default function TypewriterApp() {
         boxSizing: 'border-box'
       }}
     >
+      {/* 400px 이하 모바일 전용 반응형 스타일 적용 */}
+      <style jsx global>{`
+        .typewriter-wrapper {
+          width: 100%;
+          max-width: 520px;
+          aspect-ratio: 4 / 3.3;
+          margin-top: 40px;
+          margin-bottom: 20px;
+        }
+
+        .typewriter-textarea {
+          font-size: 15px;
+        }
+
+        @media (max-width: 400px) {
+          .typewriter-wrapper {
+            width: 175vw !important;
+            max-width: none !important;
+            aspect-ratio: 4 / 3.3;
+            margin-top: 20px !important;
+            margin-bottom: 10px !important;
+          }
+
+          .typewriter-textarea {
+            font-size: 18px !important;
+          }
+        }
+      `}</style>
+
       {/* 쓰레기통 */}
       <div
         ref={binRef}
@@ -379,87 +408,67 @@ export default function TypewriterApp() {
         />
       ))}
 
-      {/* 300% 스케일 적용 영역 (화면 밖으로 큼직하게 크롭) */}
-      <div
-        style={{
-          position: 'relative',
-          width: '300vw',
-          maxWidth: '1800px',
-          aspectRatio: '4 / 3.1',
-          marginTop: '30px',
-          display: 'flex',
-          justifyContent: 'center',
-          alignItems: 'center',
-          zIndex: 1
-        }}
-      >
+      {/* 타자기 프레임 (모바일 400px 이하에서만 커지고 반응형으로 원래 크기 유지) */}
+      <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 1 }}>
+        {/* 입력 레이어 */}
         <div
           style={{
-            position: 'relative',
-            width: '100%',
-            height: '100%'
+            position: 'absolute',
+            top: '18.5%',
+            left: '36.8%',
+            width: '26.4%',
+            height: '14%',
+            padding: '2px',
+            boxSizing: 'border-box',
+            zIndex: 3
           }}
         >
-          {/* 입력 레이어 */}
-          <div
+          <textarea
+            ref={textareaRef}
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder="타자기를 치듯 글을 작성해보세요..."
+            autoFocus
+            className="typewriter-textarea"
             style={{
-              position: 'absolute',
-              top: '18.5%',
-              left: '36.8%',
-              width: '26.4%',
-              height: '14%',
-              padding: '2px',
-              boxSizing: 'border-box',
-              zIndex: 3
-            }}
-          >
-            <textarea
-              ref={textareaRef}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="타자기를 치듯 글을 작성해보세요..."
-              autoFocus
-              style={{
-                width: '100%',
-                height: '100%',
-                border: 'none',
-                outline: 'none',
-                backgroundColor: 'transparent',
-                resize: 'none',
-                fontFamily: 'Courier New, Courier, monospace',
-                fontSize: '24px',
-                lineHeight: '1.4',
-                color: '#1a1a1a',
-                textAlign: 'left',
-                padding: 0,
-                margin: 0,
-                overflowY: 'auto',
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}
-            />
-          </div>
-
-          {/* 타자기 본체 이미지 */}
-          <div
-            style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
               width: '100%',
               height: '100%',
-              backgroundImage: 'url("/typewriter-base.png")',
-              backgroundSize: 'contain',
-              backgroundPosition: 'center',
-              backgroundRepeat: 'no-repeat',
-              pointerEvents: 'none',
-              zIndex: 2
+              border: 'none',
+              outline: 'none',
+              backgroundColor: 'transparent',
+              resize: 'none',
+              fontFamily: 'Courier New, Courier, monospace',
+              lineHeight: '1.4',
+              color: '#1a1a1a',
+              textAlign: 'left',
+              padding: 0,
+              margin: 0,
+              overflowY: 'auto',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word'
             }}
           />
         </div>
+
+        {/* 타자기 이미지 */}
+        <div
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            width: '100%',
+            height: '100%',
+            backgroundImage: 'url("/typewriter-base.png")',
+            backgroundSize: 'contain',
+            backgroundPosition: 'center',
+            backgroundRepeat: 'no-repeat',
+            pointerEvents: 'none',
+            zIndex: 2
+          }}
+        />
       </div>
 
       {/* 하단 버튼 그룹 */}
@@ -469,7 +478,7 @@ export default function TypewriterApp() {
           flexDirection: 'column',
           gap: '12px',
           width: 'calc(100% - 40px)',
-          maxWidth: '360px',
+          maxWidth: '380px',
           marginTop: '10px',
           zIndex: 20
         }}
