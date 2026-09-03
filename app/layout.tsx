@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
 import { Special_Elite, Gowun_Batang } from 'next/font/google';
-import './globals.css';
 
 // 영문 타자기 느낌 폰트
 const specialElite = Special_Elite({
@@ -13,7 +12,7 @@ const specialElite = Special_Elite({
 const gowunBatang = Gowun_Batang({
   weight: ['400', '700'],
   subsets: ['latin'],
-  variable: '--font-mona', // page.tsx의 var(--font-mona)와 연동
+  variable: '--font-mona',
 });
 
 export const metadata: Metadata = {
