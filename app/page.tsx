@@ -520,6 +520,95 @@ export default function TypewriterApp() {
           </div>
         </div>
       )}
+      // 1. 모달 열림 상태 관리 추가
+const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
+
+// 2. 하단 버튼 영역 수정
+<button
+  onClick={() => setIsKakaoModalOpen(true)}
+  style={{
+    display: 'inline-flex',
+    alignItems: 'center',
+    gap: '6px',
+    padding: '10px 20px',
+    fontSize: '14px',
+    fontFamily: 'Courier New, monospace',
+    color: '#3C1E1E',
+    backgroundColor: '#FEE500', // 카카오 노란색
+    border: 'none',
+    borderRadius: '6px',
+    fontWeight: 'bold',
+    cursor: 'pointer',
+    boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
+    transition: 'all 0.2s ease'
+  }}
+>
+  ☕ 카카오페이로 커피 한 잔 선물하기
+</button>
+
+// 3. 카카오페이 QR 모달 컴포넌트 추가
+{isKakaoModalOpen && (
+  <div
+    onClick={() => setIsKakaoModalOpen(false)}
+    style={{
+      position: 'fixed',
+      top: 0,
+      left: 0,
+      width: '100vw',
+      height: '100vh',
+      backgroundColor: 'rgba(0, 0, 0, 0.7)',
+      display: 'flex',
+      justifyContent: 'center',
+      alignItems: 'center',
+      zIndex: 200,
+      padding: '20px'
+    }}
+  >
+    <div
+      onClick={(e) => e.stopPropagation()}
+      style={{
+        backgroundColor: '#ffffff',
+        padding: '25px',
+        borderRadius: '12px',
+        textAlign: 'center',
+        maxWidth: '320px',
+        width: '100%',
+        boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
+      }}
+    >
+      <h3 style={{ margin: '0 0 10px 0', fontSize: '18px', color: '#1a1a1a' }}>
+        💛 카카오페이 후원
+      </h3>
+      <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+        카카오톡 카메라나 카카오페이 앱으로<br />아래 QR코드를 스캔해 주세요.
+      </p>
+      
+      {/* public/kakao-qr.png 위치에 QR 이미지 저장 필요 */}
+      <img
+        src="/kakao-qr.png"
+        alt="카카오페이 송금 QR"
+        style={{ width: '100%', height: 'auto', borderRadius: '8px' }}
+      />
+
+      <button
+        onClick={() => setIsKakaoModalOpen(false)}
+        style={{
+          marginTop: '15px',
+          width: '100%',
+          padding: '10px 0',
+          backgroundColor: '#333',
+          color: '#fff',
+          border: 'none',
+          borderRadius: '6px',
+          cursor: 'pointer',
+          fontFamily: 'Courier New, monospace'
+        }}
+      >
+        닫기
+      </button>
+    </div>
+  </div>
+)}
     </main>
   );
 }
