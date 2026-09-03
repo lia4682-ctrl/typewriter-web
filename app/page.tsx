@@ -324,13 +324,14 @@ export default function TypewriterApp() {
     <main
       style={{
         position: 'relative',
-        minHeight: '100vh',
+        height: '100vh',
+        width: '100vw',
         backgroundColor: '#121212',
         display: 'flex',
         flexDirection: 'column',
+        justifyContent: 'center',
         alignItems: 'center',
-        padding: '20px 0 120px 0',
-        overflowX: 'hidden',
+        overflow: 'hidden',
         userSelect: 'none',
         boxSizing: 'border-box'
       }}
@@ -340,7 +341,6 @@ export default function TypewriterApp() {
           width: 90%;
           max-width: 850px;
           aspect-ratio: 4 / 3.3;
-          margin-top: 10px;
         }
 
         .typewriter-textarea {
@@ -351,7 +351,6 @@ export default function TypewriterApp() {
           .typewriter-wrapper {
             width: 175vw !important;
             max-width: none !important;
-            margin-top: 20px !important;
           }
 
           .typewriter-textarea {
@@ -360,14 +359,14 @@ export default function TypewriterApp() {
         }
       `}</style>
 
-      {/* 키운 쓰레기통 (110px) */}
+      {/* 키운 쓰레기통 (140px) */}
       <div
         ref={binRef}
         style={{
           position: 'fixed',
-          top: '20px',
-          right: '25px',
-          width: '110px',
+          top: '25px',
+          right: '30px',
+          width: '140px',
           zIndex: 30,
           transition: 'transform 0.2s ease',
           transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
@@ -381,7 +380,7 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 버려진 종이들 */}
+      {/* 키운 버려진 종이들 (110px) */}
       {papers.map((paper) => (
         <img
           key={paper.id}
@@ -394,7 +393,7 @@ export default function TypewriterApp() {
             position: 'absolute',
             left: `${paper.x}px`,
             top: `${paper.y}px`,
-            width: '85px',
+            width: '110px',
             transform: `rotate(${paper.rotate}deg)`,
             zIndex: draggingId === paper.id ? 100 : 25,
             cursor: 'pointer',
@@ -404,9 +403,9 @@ export default function TypewriterApp() {
         />
       ))}
 
-      {/* 확대된 타자기 본체 프레임 */}
+      {/* 화면 정중앙에 배치된 타자기 프레임 */}
       <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 1 }}>
-        {/* 입력 레이어 */}
+        {/* 입력 레이어 (상단 여백 12px 추가) */}
         <div
           style={{
             position: 'absolute',
@@ -414,7 +413,7 @@ export default function TypewriterApp() {
             left: '36.8%',
             width: '26.4%',
             height: '14%',
-            padding: '2px',
+            padding: '12px 2px 2px 2px',
             boxSizing: 'border-box',
             zIndex: 3
           }}
@@ -467,11 +466,11 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 화면 바닥에 고정된 하단 버튼 그룹 (Fixed) */}
+      {/* PC에서 10% 정도 상단으로 올라온 하단 버튼 그룹 (bottom: 10vh) */}
       <div
         style={{
           position: 'fixed',
-          bottom: '20px',
+          bottom: '10vh',
           left: '50%',
           transform: 'translateX(-50%)',
           display: 'flex',
