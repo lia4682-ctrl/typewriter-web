@@ -2,13 +2,28 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
+// 감정 타입 추가
+type SentimentType = 'positive' | 'negative';
+
 interface DiscardedPaper {
   id: number;
   text: string;
   x: number;
   y: number;
   rotate: number;
+  sentiment: SentimentType; // 긍정/부정 상태 저장
 }
+
+// 간단한 한국어 감정 어휘 사전 (필요에 따라 단어를 추가할 수 있습니다)
+const POSITIVE_WORDS = [
+  '좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나',
+  '희망', '웃음', '설레', '최고', '완벽', '따뜻', '평화', '성공', '응원', '빛나'
+];
+
+const NEGATIVE_WORDS = [
+  '싫어', '싫다', '짜증', '슬프', '힘들', '우울', '화나', '아프', '지쳐', '괴로',
+  '포기', '최악', '눈물', '불안', '걱정', '절망', '상처', '외롭', '답답', '후회'
+];
 
 export default function TypewriterApp() {
   const [text, setText] = useState<string>(() => {
@@ -77,6 +92,25 @@ export default function TypewriterApp() {
       textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
     }
   }, [text]);
+
+  // 텍스트 감정 분석 함수
+  const analyzeSentiment = (inputText: string): SentimentType => {
+    let posScore = 0;
+    let negScore = 0;
+
+    POSITIVE_WORDS.forEach((word) => {
+      const matches = inputText.match(new RegExp(word, 'g'));
+      if (matches) posScore += matches.length;
+    });
+
+    NEGATIVE_WORDS.forEach((word) => {
+      const matches = inputText.match(new RegExp(word, 'g'));
+      if (matches) negScore += matches.length;
+    });
+
+    // 부정 단어가 더 많으면 부정 쓰레기, 그 외(동률 포함)는 긍정 쓰레기
+    return negScore > posScore ? 'negative' : 'positive';
+  };
 
   const playTypeSound = () => {
     if (!audioCtxRef.current) return;
@@ -199,12 +233,16 @@ export default function TypewriterApp() {
 
     const newY = Math.floor(Math.random() * 80) + 70;
 
+    // 감정 분석 결과 적용
+    const sentiment = analyzeSentiment(text);
+
     const newPaper: DiscardedPaper = {
       id: Date.now(),
       text: text,
       x: newX,
       y: newY,
-      rotate: Math.floor(Math.random() * 60) - 30
+      rotate: Math.floor(Math.random() * 60) - 30,
+      sentiment: sentiment
     };
 
     setPapers((prev) => [...prev, newPaper]);
@@ -380,12 +418,12 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 버려진 종이들 */}
+      {/* 감정에 따라 분기 처리된 버려진 종이들 */}
       {papers.map((paper) => (
         <img
           key={paper.id}
-          src="/paper.png"
-          alt="Discarded Paper"
+          src={paper.sentiment === 'positive' ? '/paper_pos.png' : '/paper_neg.png'}
+          alt={`${paper.sentiment} Discarded Paper`}
           onMouseDown={(e) => handleMouseDown(e, paper.id, paper.x, paper.y)}
           onTouchStart={(e) => handleTouchStart(e, paper.id, paper.x, paper.y)}
           onClick={() => handlePaperClick(paper.text)}
@@ -405,7 +443,6 @@ export default function TypewriterApp() {
 
       {/* 타자기 프레임 */}
       <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 1 }}>
-        {/* 입력 레이어 (paddingTop: 20px 적용) */}
         <div
           style={{
             position: 'absolute',
@@ -448,7 +485,6 @@ export default function TypewriterApp() {
           />
         </div>
 
-        {/* 타자기 이미지 */}
         <div
           style={{
             position: 'absolute',
