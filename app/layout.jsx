@@ -3,11 +3,7 @@ export const metadata = {
   description: 'A vintage typewriter journaling web app',
 }
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
+export default function RootLayout({ children }) {
   return (
     <html lang="ko">
       <body>{children}</body>
