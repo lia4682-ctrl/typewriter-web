@@ -43,7 +43,7 @@ export default function TypewriterApp() {
     };
   }, []);
 
-  // 2. [방법 2 핵심] 텍스트 입력 시 스크롤을 항상 최하단으로 부드럽게 고정
+  // 2. 텍스트 입력 시 스크롤을 항상 최하단으로 고정
   useEffect(() => {
     if (textareaRef.current) {
       textareaRef.current.scrollTop = textareaRef.current.scrollHeight;
@@ -157,33 +157,33 @@ export default function TypewriterApp() {
   };
 
   const handleDiscard = () => {
-  if (!text.trim()) {
-    alert('버릴 내용이 없습니다.');
-    return;
-  }
+    if (!text.trim()) {
+      alert('버릴 내용이 없습니다.');
+      return;
+    }
 
-  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
-  const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
 
-  // 타자기 영역(중앙)을 피해서 화면 좌/우 측면 상단 위주로 종이 배치
-  const isLeft = Math.random() > 0.5;
-  const newX = isLeft
-    ? Math.floor(Math.random() * (windowWidth * 0.2)) + 20 // 왼쪽 사이드
-    : Math.floor(Math.random() * (windowWidth * 0.2)) + (windowWidth * 0.75); // 오른쪽 사이드
+    // 타자기 본체 영역을 피해서 화면 좌/우 상단 사이드로 배치
+    const isLeft = Math.random() > 0.5;
+    const newX = isLeft
+      ? Math.floor(Math.random() * (windowWidth * 0.2)) + 20
+      : Math.floor(Math.random() * (windowWidth * 0.2)) + (windowWidth * 0.75);
 
-  const newY = Math.floor(Math.random() * (windowHeight * 0.3)) + 40; // 화면 상단 영역
+    const newY = Math.floor(Math.random() * (windowHeight * 0.3)) + 40;
 
-  const newPaper: DiscardedPaper = {
-    id: Date.now(),
-    text: text,
-    x: newX,
-    y: newY,
-    rotate: Math.floor(Math.random() * 60) - 30 // 과도한 회전 방지 (-30 deg ~ 30 deg)
+    const newPaper: DiscardedPaper = {
+      id: Date.now(),
+      text: text,
+      x: newX,
+      y: newY,
+      rotate: Math.floor(Math.random() * 60) - 30
+    };
+
+    setPapers((prev) => [...prev, newPaper]);
+    setText('');
   };
-
-  setPapers((prev) => [...prev, newPaper]);
-  setText('');
-};
 
   const handleMouseDown = (e: React.MouseEvent, id: number, paperX: number, paperY: number) => {
     e.preventDefault();
@@ -324,16 +324,13 @@ export default function TypewriterApp() {
         aspectRatio: '4 / 3',
         zIndex: 1
       }}>
-        {/* 종이 배경 및 입력 레이어 (위치 고정) */}
+        {/* 입력 레이어 (종이 배경 제거, 투명 배경 유지) */}
         <div style={{
           position: 'absolute',
           top: '5%',
           left: '30%',
           width: '40%',
           height: '60%',
-          backgroundColor: '#fcf8f2',
-          boxShadow: '0 4px 15px rgba(0,0,0,0.3)',
-          borderRadius: '2px',
           padding: '20px',
           zIndex: 1
         }}>
@@ -358,7 +355,6 @@ export default function TypewriterApp() {
               textAlign: 'center',
               padding: 0,
               margin: 0,
-              // Y축 스크롤은 허용하되 스크롤바는 숨김
               overflowY: 'auto',
               scrollbarWidth: 'none', // Firefox
               msOverflowStyle: 'none', // IE/Edge
@@ -368,7 +364,7 @@ export default function TypewriterApp() {
           />
         </div>
 
-        {/* 타자기 본체 이미지 (종이 위에 고정) */}
+        {/* 타자기 본체 이미지 */}
         <div style={{
           position: 'absolute',
           top: 0,
