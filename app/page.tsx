@@ -102,9 +102,9 @@ export default function TypewriterApp() {
     URL.revokeObjectURL(url);
   };
 
-  // 현재 줄 수 계산 (엔터 기준)
+  // 현재 줄 수 계산
   const lineCount = text.split('\n').length;
-  // 한 줄 높이(lineHeight: 32px)만큼 translateY로 전체 텍스트를 위로 밀어 올림
+  // 한 줄 높이(lineHeight: 32px)만큼 translateY로 위로 밀어 올림
   const offsetY = (lineCount - 1) * 32;
 
   return (
@@ -129,21 +129,21 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 마스크 영역 (타자기 롤러 위쪽 공간 고정) */}
+        {/* 마스크 영역 (타자기 본체 롤러 위쪽 공간) */}
         <div style={{
           position: 'absolute',
-          top: '5%', // 위로 사라지는 텍스트 보일 상단 범위
+          bottom: '50%', // 타자기 롤러 바로 위 위치
           left: '20%',
           width: '60%',
-          height: '240px', // 타자기 롤러 위쪽 전체 높이
+          height: '240px',
           overflow: 'hidden',
           maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)',
           WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)'
         }}>
-          {/* 실제 입력창: 줄 수가 늘어나면 Y축 이동으로 위로 슬라이딩 */}
+          {/* 실제 입력창 */}
           <div style={{
             position: 'absolute',
-            bottom: '20px', // 첫 줄 입력 시작 위치 (타자기 롤러 바로 위)
+            bottom: '0px', // 첫 줄 입력 시작점 (타자기 롤러 바로 위)
             width: '100%',
             transform: `translateY(-${offsetY}px)`,
             transition: 'transform 0.2s cubic-bezier(0.25, 1, 0.5, 1)'
@@ -164,7 +164,7 @@ export default function TypewriterApp() {
                 fontFamily: 'Courier New, Courier, monospace',
                 fontSize: '18px',
                 lineHeight: '32px',
-                color: '#ffffff',
+                color: '#ffffff', // 흰색 글씨
                 textAlign: 'center',
                 textShadow: '0 2px 4px rgba(0,0,0,0.8)',
                 padding: '0',
