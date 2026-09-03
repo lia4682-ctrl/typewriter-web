@@ -6,7 +6,6 @@ export default function TypewriterApp() {
   const [text, setText] = useState('');
   const audioCtxRef = useRef<AudioContext | null>(null);
 
-  // Web Audio API 초기화
   useEffect(() => {
     const initAudio = () => {
       if (!audioCtxRef.current) {
@@ -24,7 +23,6 @@ export default function TypewriterApp() {
     };
   }, []);
 
-  // 1. 타자기 타격음
   const playTypeSound = () => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
@@ -56,7 +54,6 @@ export default function TypewriterApp() {
     noise.start();
   };
 
-  // 2. 줄바꿈 종 소리
   const playBellSound = () => {
     if (!audioCtxRef.current) return;
     const ctx = audioCtxRef.current;
@@ -78,7 +75,6 @@ export default function TypewriterApp() {
     osc.stop(ctx.currentTime + 0.8);
   };
 
-  // 키 입력 핸들러
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter') {
       playBellSound();
@@ -87,7 +83,6 @@ export default function TypewriterApp() {
     }
   };
 
-  // .txt 파일 저장 핸들러
   const handleSaveTxt = () => {
     if (!text.trim()) {
       alert('저장할 내용을 입력해 주세요.');
@@ -102,10 +97,9 @@ export default function TypewriterApp() {
     URL.revokeObjectURL(url);
   };
 
-  const lineCount = text.split('\n').length;
-  const lineHeight = 32; // 한 줄 높이 (px)
-  // 가장 아랫줄이 고정된 라인 위치에 머물도록, 줄 수(lineCount - 1)에 정확히 대응하여 위로 슬라이드
-  const offsetY = (lineCount - 1) * lineHeight;
+  // 줄 단위 분리
+  const lines = text.split('\n');
+  const lineHeight = 32; // 줄간격 (px)
 
   return (
     <main style={{
@@ -118,7 +112,6 @@ export default function TypewriterApp() {
       padding: '20px',
       gap: '15px'
     }}>
-      {/* 타자기 컨테이너 */}
       <div style={{
         position: 'relative',
         width: '100%',
@@ -129,54 +122,79 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 종이 영역 프레임 (위쪽으로 밀려 올라가는 텍스트 가림) */}
+        {/* 상단 텍스트 잘림 뷰포트 */}
         <div style={{
           position: 'absolute',
           top: '10%',
           left: '20%',
           width: '60%',
-          height: '160px',
+          height: '180px',
           overflow: 'hidden',
-          maskImage: 'linear-gradient(to bottom, transparent 0%, black 25%)',
-          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 25%)'
+          maskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)',
+          WebkitMaskImage: 'linear-gradient(to bottom, transparent 0%, black 20%)'
         }}>
-          {/* 입력 텍스트 슬라이딩 박스 */}
+          {/* 이전 줄들 (타격점 위로 슬라이드) */}
           <div style={{
             position: 'absolute',
-            bottom: '15px', // 작성 중인 가장 아랫줄이 항상 위치할 '타격선' 고정 위치
+            bottom: '20px', // 타격점 베이스라인 고정
             width: '100%',
-            transform: `translateY(-${offsetY}px)`,
-            transition: 'transform 0.15s cubic-bezier(0.2, 0, 0, 1)' // 휙휙 올라가지 않고 쫀쫀하게 착 감기는 모션
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            transition: 'transform 0.15s ease-out',
+            transform: `translateY(-${(lines.length - 1) * lineHeight}px)`
           }}>
-            <textarea
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="타자기를 치듯 글을 작성해보세요..."
-              rows={lineCount}
-              autoFocus
-              style={{
-                width: '100%',
-                border: 'none',
-                outline: 'none',
-                backgroundColor: 'transparent',
-                resize: 'none',
-                fontFamily: 'Courier New, Courier, monospace',
-                fontSize: '17px',
-                lineHeight: `${lineHeight}px`,
-                color: '#ffffff',
-                textAlign: 'center',
-                textShadow: '0 1px 3px rgba(0,0,0,0.9)',
-                padding: '0',
-                margin: '0',
-                overflow: 'hidden'
-              }}
-            />
+            {lines.map((line, idx) => (
+              <div
+                key={idx}
+                style={{
+                  height: `${lineHeight}px`,
+                  lineHeight: `${lineHeight}px`,
+                  fontSize: '17px',
+                  fontFamily: 'Courier New, Courier, monospace',
+                  color: '#ffffff',
+                  textAlign: 'center',
+                  textShadow: '0 1px 3px rgba(0,0,0,0.9)',
+                  whiteSpace: 'pre',
+                  width: '100%'
+                }}
+              >
+                {line || ' '}
+              </div>
+            ))}
           </div>
+
+          {/* 투명 실제 입력창 (포커스 및 키 입력 처리용) */}
+          <textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={text ? '' : '타자기를 치듯 글을 작성해보세요...'}
+            autoFocus
+            style={{
+              position: 'absolute',
+              bottom: '20px', // 타격점 베이스라인 완벽 고정
+              left: 0,
+              width: '100%',
+              height: `${lineHeight}px`,
+              border: 'none',
+              outline: 'none',
+              backgroundColor: 'transparent',
+              resize: 'none',
+              fontFamily: 'Courier New, Courier, monospace',
+              fontSize: '17px',
+              lineHeight: `${lineHeight}px`,
+              color: 'transparent', // 실제 커서 입력만 받고 텍스트는 위 렌더링 레이어 사용
+              caretColor: '#ffffff', // 커서는 선명하게 표시
+              textAlign: 'center',
+              padding: 0,
+              margin: 0,
+              overflow: 'hidden'
+            }}
+          />
         </div>
       </div>
 
-      {/* .txt 저장 버튼 */}
       <button
         onClick={handleSaveTxt}
         style={{
