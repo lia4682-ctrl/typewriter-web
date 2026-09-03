@@ -31,6 +31,7 @@ export default function TypewriterApp() {
     const lineHeight = 32;
     const linesBeforeCursor = text.substring(0, el.selectionStart).split('\n').length;
     
+    // 높이가 축소됨에 따라 스크롤 타격점을 2번째 줄로 상향 조절
     const targetScrollTop = Math.max(0, (linesBeforeCursor - 2) * lineHeight);
     el.scrollTop = targetScrollTop;
   };
@@ -134,13 +135,13 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
-        {/* 가로 폭 32%로 추가 축소 및 중앙 정렬 */}
+        {/* 높이를 72px로 줄여 날짜 텍스트와 절대 겹치지 않도록 조절 */}
         <div style={{
           position: 'absolute',
           top: '16%',
-          left: '34%',  // 중앙 정렬 (31% -> 34%)
-          width: '32%', // 너비 추가 축소 (38% -> 32%)
-          height: '100px',
+          left: '34%',
+          width: '32%',
+          height: '72px', // 높이 축소 (100px -> 72px)
           overflow: 'hidden'
         }}>
           <textarea
