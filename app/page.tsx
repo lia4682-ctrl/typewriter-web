@@ -31,7 +31,8 @@ export default function TypewriterApp() {
     const lineHeight = 32;
     const linesBeforeCursor = text.substring(0, el.selectionStart).split('\n').length;
     
-    const targetScrollTop = Math.max(0, (linesBeforeCursor - 3) * lineHeight);
+    // 타격선을 종이 중간 높이로 끌어올림 (글자가 타자기 기계부에 걸리지 않도록 설정)
+    const targetScrollTop = Math.max(0, (linesBeforeCursor - 2) * lineHeight);
     el.scrollTop = targetScrollTop;
   };
 
@@ -134,12 +135,13 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
+        {/* 하단 한계점을 기계부 위쪽으로 완전히 상향 조정 */}
         <div style={{
           position: 'absolute',
           top: '12%',
           left: '28%',
           width: '44%',
-          height: '162px', // 기존 180px에서 10% 축소
+          height: '135px', // 높이를 더 줄여서 하단 잘림 완전 차단
           overflow: 'hidden'
         }}>
           <textarea
@@ -163,8 +165,8 @@ export default function TypewriterApp() {
               color: '#1a1a1a',
               caretColor: '#1a1a1a',
               textAlign: 'center',
-              paddingTop: '10px',
-              paddingBottom: '8px', // 기존 20px에서 10% 넘게 대폭 축소
+              paddingTop: '8px',
+              paddingBottom: '0px',
               margin: 0,
               overflowY: 'hidden'
             }}
