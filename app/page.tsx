@@ -326,7 +326,7 @@ export default function TypewriterApp() {
           zIndex: 1
         }}
       >
-        {/* 입력 레이어 (종이 영역) */}
+        {/* 입력 레이어 (zIndex: 3 으로 올려 최상단 배치) */}
         <div
           style={{
             position: 'absolute',
@@ -334,9 +334,9 @@ export default function TypewriterApp() {
             left: '36.8%',
             width: '26.4%',
             height: '16.5%',
-            padding: '8px',
+            padding: '6px',
             boxSizing: 'border-box',
-            zIndex: 1
+            zIndex: 3
           }}
         >
           <textarea
@@ -369,7 +369,7 @@ export default function TypewriterApp() {
           />
         </div>
 
-        {/* 타자기 본체 이미지 */}
+        {/* 타자기 본체 이미지 (zIndex: 2) */}
         <div
           style={{
             position: 'absolute',
