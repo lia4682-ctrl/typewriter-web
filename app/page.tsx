@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
+import { toPng } from 'html-to-image';
 
 type SentimentType = 'positive' | 'negative' | 'neutral';
 
@@ -34,6 +35,7 @@ export default function TypewriterApp() {
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const binRef = useRef<HTMLDivElement | null>(null);
+  const exportCardRef = useRef<HTMLDivElement | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
 
@@ -222,6 +224,31 @@ export default function TypewriterApp() {
     URL.revokeObjectURL(url);
   };
 
+  // 🖼️ 이미지로 저장하기 (SNS 공유용 카드 생성)
+  const handleSaveImage = async () => {
+    if (!text.trim()) {
+      alert('저장할 내용을 입력해 주세요.');
+      return;
+    }
+
+    if (!exportCardRef.current) return;
+
+    try {
+      const dataUrl = await toPng(exportCardRef.current, {
+        cacheBust: true,
+        pixelRatio: 2, // 고해상도 추출
+      });
+
+      const link = document.createElement('a');
+      link.download = `typewriter_${new Date().toISOString().slice(0, 10)}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error('Failed to export image:', err);
+      alert('이미지 생성에 실패했습니다.');
+    }
+  };
+
   const handleDiscard = () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -408,6 +435,79 @@ export default function TypewriterApp() {
         }
       `}</style>
 
+      {/* 📸 캡처 전용 템플릿 (화면 밖 렌더링) */}
+      <div
+        style={{
+          position: 'absolute',
+          top: '-9999px',
+          left: '-9999px',
+          overflow: 'hidden',
+        }}
+      >
+        <div
+          ref={exportCardRef}
+          style={{
+            width: '600px',
+            minHeight: '800px',
+            backgroundColor: '#fbf8f1',
+            backgroundImage: `radial-gradient(#e2d9cc 1px, transparent 1px)`,
+            backgroundSize: '20px 20px',
+            padding: '60px 50px',
+            boxSizing: 'border-box',
+            display: 'flex',
+            flexDirection: 'column',
+            justifyContent: 'space-between',
+            fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+            color: '#2b2b2b',
+            boxShadow: '0 0 20px rgba(0,0,0,0.1)',
+          }}
+        >
+          <div>
+            <div
+              style={{
+                fontSize: '14px',
+                color: '#8c8275',
+                borderBottom: '2px solid #2b2b2b',
+                paddingBottom: '12px',
+                marginBottom: '40px',
+                display: 'flex',
+                justifyContent: 'space-between',
+                letterSpacing: '1px',
+              }}
+            >
+              <span>VINTAGE TYPEWRITER</span>
+              <span>{new Date().toISOString().slice(0, 10)}</span>
+            </div>
+
+            <p
+              style={{
+                fontSize: '18px',
+                lineHeight: '1.8',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-word',
+                margin: 0,
+              }}
+            >
+              {text || '작성된 글이 없습니다.'}
+            </p>
+          </div>
+
+          <div
+            style={{
+              marginTop: '60px',
+              paddingTop: '20px',
+              borderTop: '1px stroke #e2d9cc',
+              fontSize: '12px',
+              color: '#a39888',
+              textAlign: 'center',
+              letterSpacing: '2px',
+            }}
+          >
+            TYPED ON VINTAGE TYPEWRITER
+          </div>
+        </div>
+      </div>
+
       {/* 쓰레기통 */}
       <div
         ref={binRef}
@@ -517,7 +617,7 @@ export default function TypewriterApp() {
       <div
         style={{
           position: 'fixed',
-          bottom: '10vh',
+          bottom: '8vh',
           left: '50%',
           transform: 'translateX(-50%)',
           display: 'flex',
@@ -528,13 +628,13 @@ export default function TypewriterApp() {
           zIndex: 50
         }}
       >
-        <div style={{ display: 'flex', gap: '10px', width: '100%' }}>
+        <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
           <button
             onClick={handleSaveTxt}
             style={{
               flex: 1,
-              padding: '14px 8px',
-              fontSize: '14px',
+              padding: '12px 6px',
+              fontSize: '13px',
               fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
               color: '#ffffff',
               backgroundColor: '#2a2a2a',
@@ -549,15 +649,38 @@ export default function TypewriterApp() {
               boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
             }}
           >
-            💾 .txt 저장하기
+            💾 .txt
+          </button>
+
+          <button
+            onClick={handleSaveImage}
+            style={{
+              flex: 1.2,
+              padding: '12px 6px',
+              fontSize: '13px',
+              fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+              color: '#ffffff',
+              backgroundColor: '#3b5998',
+              border: '1px solid #4a69ad',
+              borderRadius: '10px',
+              cursor: 'pointer',
+              whiteSpace: 'nowrap',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '4px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
+            }}
+          >
+            🖼️ 이미지 저장
           </button>
 
           <button
             onClick={handleDiscard}
             style={{
               flex: 1,
-              padding: '14px 8px',
-              fontSize: '14px',
+              padding: '12px 6px',
+              fontSize: '13px',
               fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
               color: '#ffffff',
               backgroundColor: '#d9534f',
@@ -580,8 +703,8 @@ export default function TypewriterApp() {
           onClick={() => setIsKakaoModalOpen(true)}
           style={{
             width: '100%',
-            padding: '14px 8px',
-            fontSize: '14px',
+            padding: '12px 8px',
+            fontSize: '13px',
             fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
             color: '#3C1E1E',
             backgroundColor: '#FEE500',
@@ -597,7 +720,7 @@ export default function TypewriterApp() {
             boxShadow: '0 4px 12px rgba(0,0,0,0.5)'
           }}
         >
-          ☕ 개발자에게 커피 한 잔 사주기
+          ☕ 카카오페이로 커피 한 잔 선물하기
         </button>
       </div>
 
