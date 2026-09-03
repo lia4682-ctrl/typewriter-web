@@ -31,7 +31,6 @@ export default function TypewriterApp() {
     const lineHeight = 32;
     const linesBeforeCursor = text.substring(0, el.selectionStart).split('\n').length;
     
-    // 타격선을 타자기 기본 인쇄 문구 바로 위쪽으로 상향
     const targetScrollTop = Math.max(0, (linesBeforeCursor - 2) * lineHeight);
     el.scrollTop = targetScrollTop;
   };
@@ -135,12 +134,13 @@ export default function TypewriterApp() {
         backgroundPosition: 'center',
         backgroundRepeat: 'no-repeat'
       }}>
+        {/* 가로 너비 축소 및 중앙 정렬 */}
         <div style={{
           position: 'absolute',
           top: '16%',
-          left: '28%',
-          width: '44%',
-          height: '100px', // 하단 날짜 문구 위에서 멈추도록 높이 축소
+          left: '31%',  // 종이 중앙 정렬 조정 (28% -> 31%)
+          width: '38%', // 가로 폭 축소 (44% -> 38%)
+          height: '100px',
           overflow: 'hidden'
         }}>
           <textarea
@@ -164,11 +164,11 @@ export default function TypewriterApp() {
               color: '#1a1a1a',
               caretColor: '#1a1a1a',
               textAlign: 'center',
-              padding: '0 8px', // 양옆 여백 지정
+              padding: '0 4px',
               margin: 0,
               overflowY: 'hidden',
-              whiteSpace: 'pre-wrap', // 긴 텍스트 자동 줄바꿈 (양옆 잘림 방지)
-              wordBreak: 'break-word'  // 단어 단위 강제 줄바꿈
+              whiteSpace: 'pre-wrap',
+              wordBreak: 'break-word'
             }}
           />
         </div>
