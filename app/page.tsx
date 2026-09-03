@@ -11,7 +11,6 @@ interface DiscardedPaper {
 }
 
 export default function TypewriterApp() {
-  // 1. localStorage에서 초기값 불러오기
   const [text, setText] = useState<string>(() => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('typewriter_text') || '';
@@ -44,7 +43,6 @@ export default function TypewriterApp() {
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
 
-  // 2. 상태 변경 시 localStorage에 자동 저장
   useEffect(() => {
     localStorage.setItem('typewriter_text', text);
   }, [text]);
@@ -64,10 +62,12 @@ export default function TypewriterApp() {
     };
 
     window.addEventListener('keydown', initAudio, { once: true });
+    window.addEventListener('touchstart', initAudio, { once: true });
     window.addEventListener('click', initAudio, { once: true });
 
     return () => {
       window.removeEventListener('keydown', initAudio);
+      window.removeEventListener('touchstart', initAudio);
       window.removeEventListener('click', initAudio);
     };
   }, []);
@@ -190,15 +190,15 @@ export default function TypewriterApp() {
       return;
     }
 
-    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
-    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
+    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 640;
 
     const isLeft = Math.random() > 0.5;
     const newX = isLeft
-      ? Math.floor(Math.random() * (windowWidth * 0.2)) + 20
-      : Math.floor(Math.random() * (windowWidth * 0.2)) + (windowWidth * 0.75);
+      ? Math.floor(Math.random() * (windowWidth * 0.15)) + 15
+      : Math.floor(Math.random() * (windowWidth * 0.15)) + (windowWidth * 0.65);
 
-    const newY = Math.floor(Math.random() * (windowHeight * 0.3)) + 40;
+    const newY = Math.floor(Math.random() * (windowHeight * 0.2)) + 30;
 
     const newPaper: DiscardedPaper = {
       id: Date.now(),
@@ -212,24 +212,33 @@ export default function TypewriterApp() {
     setText('');
   };
 
-  const handleMouseDown = (e: React.MouseEvent, id: number, paperX: number, paperY: number) => {
-    e.preventDefault();
+  const startDrag = (clientX: number, clientY: number, id: number, paperX: number, paperY: number) => {
     setDraggingId(id);
     isDraggingRef.current = false;
     dragOffsetRef.current = {
-      x: e.clientX - paperX,
-      y: e.clientY - paperY
+      x: clientX - paperX,
+      y: clientY - paperY
     };
   };
 
+  const handleMouseDown = (e: React.MouseEvent, id: number, paperX: number, paperY: number) => {
+    e.preventDefault();
+    startDrag(e.clientX, e.clientY, id, paperX, paperY);
+  };
+
+  const handleTouchStart = (e: React.TouchEvent, id: number, paperX: number, paperY: number) => {
+    const touch = e.touches[0];
+    startDrag(touch.clientX, touch.clientY, id, paperX, paperY);
+  };
+
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
+    const processMove = (clientX: number, clientY: number) => {
       if (draggingId === null) return;
 
       isDraggingRef.current = true;
 
-      const newX = e.clientX - dragOffsetRef.current.x;
-      const newY = e.clientY - dragOffsetRef.current.y;
+      const newX = clientX - dragOffsetRef.current.x;
+      const newY = clientY - dragOffsetRef.current.y;
 
       setPapers((prev) =>
         prev.map((p) => (p.id === draggingId ? { ...p, x: newX, y: newY } : p))
@@ -238,25 +247,25 @@ export default function TypewriterApp() {
       if (binRef.current) {
         const binRect = binRef.current.getBoundingClientRect();
         const isOver =
-          e.clientX >= binRect.left &&
-          e.clientX <= binRect.right &&
-          e.clientY >= binRect.top &&
-          e.clientY <= binRect.bottom;
+          clientX >= binRect.left &&
+          clientX <= binRect.right &&
+          clientY >= binRect.top &&
+          clientY <= binRect.bottom;
 
         setIsHoveredBin(isOver);
       }
     };
 
-    const handleMouseUp = (e: MouseEvent) => {
+    const processEnd = (clientX: number, clientY: number) => {
       if (draggingId === null) return;
 
       if (binRef.current) {
         const binRect = binRef.current.getBoundingClientRect();
         const isOver =
-          e.clientX >= binRect.left &&
-          e.clientX <= binRect.right &&
-          e.clientY >= binRect.top &&
-          e.clientY <= binRect.bottom;
+          clientX >= binRect.left &&
+          clientX <= binRect.right &&
+          clientY >= binRect.top &&
+          clientY <= binRect.bottom;
 
         if (isOver) {
           playTrashSound();
@@ -268,14 +277,41 @@ export default function TypewriterApp() {
       setIsHoveredBin(false);
     };
 
+    const handleMouseMove = (e: MouseEvent) => {
+      processMove(e.clientX, e.clientY);
+    };
+
+    const handleMouseUp = (e: MouseEvent) => {
+      processEnd(e.clientX, e.clientY);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (draggingId !== null) {
+        e.preventDefault(); // 스크롤 방지
+        const touch = e.touches[0];
+        processMove(touch.clientX, touch.clientY);
+      }
+    };
+
+    const handleTouchEnd = (e: TouchEvent) => {
+      if (draggingId !== null) {
+        const touch = e.changedTouches[0];
+        processEnd(touch.clientX, touch.clientY);
+      }
+    };
+
     if (draggingId !== null) {
       window.addEventListener('mousemove', handleMouseMove);
       window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener('touchmove', handleTouchMove, { passive: false });
+      window.addEventListener('touchend', handleTouchEnd);
     }
 
     return () => {
       window.removeEventListener('mousemove', handleMouseMove);
       window.removeEventListener('mouseup', handleMouseUp);
+      window.removeEventListener('touchmove', handleTouchMove);
+      window.removeEventListener('touchend', handleTouchEnd);
     };
   }, [draggingId]);
 
@@ -295,10 +331,11 @@ export default function TypewriterApp() {
         flexDirection: 'column',
         justifyContent: 'center',
         alignItems: 'center',
-        padding: '20px',
+        padding: '15px 10px',
         gap: '15px',
         overflow: 'hidden',
-        userSelect: 'none'
+        userSelect: 'none',
+        boxSizing: 'border-box'
       }}
     >
       {/* 휴지통 */}
@@ -306,10 +343,9 @@ export default function TypewriterApp() {
         ref={binRef}
         style={{
           position: 'absolute',
-          top: '20px',
-          right: '20px',
-          width: '40vw',
-          maxWidth: '280px',
+          top: '15px',
+          right: '15px',
+          width: '80px',
           zIndex: 15,
           transition: 'transform 0.2s ease',
           transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
@@ -330,16 +366,17 @@ export default function TypewriterApp() {
           src="/paper.png"
           alt="Discarded Paper"
           onMouseDown={(e) => handleMouseDown(e, paper.id, paper.x, paper.y)}
+          onTouchStart={(e) => handleTouchStart(e, paper.id, paper.x, paper.y)}
           onClick={() => handlePaperClick(paper.text)}
           style={{
             position: 'absolute',
             left: `${paper.x}px`,
             top: `${paper.y}px`,
-            width: '20vw',
-            maxWidth: '160px',
+            width: '90px',
             transform: `rotate(${paper.rotate}deg)`,
             zIndex: draggingId === paper.id ? 100 : 20,
             cursor: 'pointer',
+            touchAction: 'none',
             transition: draggingId === paper.id ? 'none' : 'transform 0.1s ease'
           }}
         />
@@ -363,7 +400,7 @@ export default function TypewriterApp() {
             left: '36.8%',
             width: '26.4%',
             height: '12%',
-            padding: '4px',
+            padding: '2px',
             boxSizing: 'border-box',
             zIndex: 3
           }}
@@ -373,7 +410,7 @@ export default function TypewriterApp() {
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="타자기 치듯 글을 써 보세요..."
+            placeholder="타자기를 치듯 글을 작성해보세요..."
             autoFocus
             style={{
               width: '100%',
@@ -383,8 +420,8 @@ export default function TypewriterApp() {
               backgroundColor: 'transparent',
               resize: 'none',
               fontFamily: 'Courier New, Courier, monospace',
-              fontSize: '13px',
-              lineHeight: '1.4',
+              fontSize: '12px',
+              lineHeight: '1.3',
               color: '#1a1a1a',
               textAlign: 'left',
               padding: 0,
@@ -417,23 +454,33 @@ export default function TypewriterApp() {
       </div>
 
       {/* 하단 버튼 그룹 */}
-      <div style={{ display: 'flex', gap: '10px', zIndex: 10 }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: '10px',
+          justifyContent: 'center',
+          alignItems: 'center',
+          flexWrap: 'wrap',
+          width: '100%',
+          maxWidth: '500px',
+          zIndex: 10
+        }}
+      >
         <button
           onClick={handleSaveTxt}
           style={{
-            padding: '10px 20px',
-            fontSize: '14px',
+            flex: '1 1 auto',
+            minWidth: '120px',
+            padding: '12px 16px',
+            fontSize: '13px',
             fontFamily: 'Courier New, monospace',
             color: '#ffffff',
             backgroundColor: '#2a2a2a',
             border: '1px solid #444444',
-            borderRadius: '6px',
+            borderRadius: '8px',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
             boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
           }}
-          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#3a3a3a')}
-          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#2a2a2a')}
         >
           💾 .txt 저장하기
         </button>
@@ -441,19 +488,18 @@ export default function TypewriterApp() {
         <button
           onClick={handleDiscard}
           style={{
-            padding: '10px 20px',
-            fontSize: '14px',
+            flex: '1 1 auto',
+            minWidth: '100px',
+            padding: '12px 16px',
+            fontSize: '13px',
             fontFamily: 'Courier New, monospace',
             color: '#ffffff',
             backgroundColor: '#d9534f',
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: '8px',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
             boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
           }}
-          onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#c9302c')}
-          onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#d9534f')}
         >
           🗑️ 버리기
         </button>
@@ -461,20 +507,21 @@ export default function TypewriterApp() {
         <button
           onClick={() => setIsKakaoModalOpen(true)}
           style={{
+            flex: '1 1 100%',
             display: 'inline-flex',
             alignItems: 'center',
+            justifyContent: 'center',
             gap: '6px',
-            padding: '10px 20px',
-            fontSize: '14px',
+            padding: '12px 16px',
+            fontSize: '13px',
             fontFamily: 'Courier New, monospace',
             color: '#3C1E1E',
             backgroundColor: '#FEE500',
             border: 'none',
-            borderRadius: '6px',
+            borderRadius: '8px',
             fontWeight: 'bold',
             cursor: 'pointer',
-            boxShadow: '0 4px 6px rgba(0,0,0,0.3)',
-            transition: 'all 0.2s ease'
+            boxShadow: '0 4px 6px rgba(0,0,0,0.3)'
           }}
         >
           ☕ 카카오페이로 커피 한 잔 선물하기
@@ -496,7 +543,8 @@ export default function TypewriterApp() {
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 200,
-            padding: '20px'
+            padding: '20px',
+            boxSizing: 'border-box'
           }}
         >
           <div
@@ -507,7 +555,7 @@ export default function TypewriterApp() {
               color: '#2a2a2a',
               width: '100%',
               maxWidth: '450px',
-              padding: '30px 25px 25px 25px',
+              padding: '25px 20px',
               borderRadius: '8px',
               boxShadow: '0 10px 25px rgba(0, 0, 0, 0.5)',
               fontFamily: 'Courier New, monospace',
@@ -533,7 +581,7 @@ export default function TypewriterApp() {
                 maxHeight: '300px',
                 overflowY: 'auto',
                 margin: 0,
-                fontSize: '15px'
+                fontSize: '14px'
               }}
             >
               {selectedPaperText}
@@ -544,11 +592,11 @@ export default function TypewriterApp() {
               style={{
                 marginTop: '20px',
                 width: '100%',
-                padding: '8px 0',
+                padding: '10px 0',
                 backgroundColor: '#333',
                 color: '#fff',
                 border: 'none',
-                borderRadius: '4px',
+                borderRadius: '6px',
                 cursor: 'pointer',
                 fontFamily: 'Courier New, monospace'
               }}
@@ -574,25 +622,26 @@ export default function TypewriterApp() {
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 200,
-            padding: '20px'
+            padding: '20px',
+            boxSizing: 'border-box'
           }}
         >
           <div
             onClick={(e) => e.stopPropagation()}
             style={{
               backgroundColor: '#ffffff',
-              padding: '25px',
+              padding: '20px',
               borderRadius: '12px',
               textAlign: 'center',
-              maxWidth: '320px',
+              maxWidth: '300px',
               width: '100%',
               boxShadow: '0 10px 25px rgba(0,0,0,0.5)'
             }}
           >
-            <h3 style={{ margin: '0 0 10px 0', fontSize: '18px', color: '#1a1a1a' }}>
+            <h3 style={{ margin: '0 0 10px 0', fontSize: '16px', color: '#1a1a1a' }}>
               💛 카카오페이 후원
             </h3>
-            <p style={{ fontSize: '13px', color: '#666', marginBottom: '15px' }}>
+            <p style={{ fontSize: '12px', color: '#666', marginBottom: '15px' }}>
               카카오톡 카메라나 카카오페이 앱으로<br />아래 QR코드를 스캔해 주세요.
             </p>
 
