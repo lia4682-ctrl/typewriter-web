@@ -2,8 +2,8 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 
-// 감정 타입 추가
-type SentimentType = 'positive' | 'negative';
+// 감정 타입에 중립(neutral) 추가
+type SentimentType = 'positive' | 'negative' | 'neutral';
 
 interface DiscardedPaper {
   id: number;
@@ -11,10 +11,9 @@ interface DiscardedPaper {
   x: number;
   y: number;
   rotate: number;
-  sentiment: SentimentType; // 긍정/부정 상태 저장
+  sentiment: SentimentType;
 }
 
-// 간단한 한국어 감정 어휘 사전 (필요에 따라 단어를 추가할 수 있습니다)
 const POSITIVE_WORDS = [
   '좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나',
   '희망', '웃음', '설레', '최고', '완벽', '따뜻', '평화', '성공', '응원', '빛나'
@@ -93,7 +92,7 @@ export default function TypewriterApp() {
     }
   }, [text]);
 
-  // 텍스트 감정 분석 함수
+  // 감정 분석 로직 (긍정 / 부정 / 중립)
   const analyzeSentiment = (inputText: string): SentimentType => {
     let posScore = 0;
     let negScore = 0;
@@ -108,8 +107,21 @@ export default function TypewriterApp() {
       if (matches) negScore += matches.length;
     });
 
-    // 부정 단어가 더 많으면 부정 쓰레기, 그 외(동률 포함)는 긍정 쓰레기
-    return negScore > posScore ? 'negative' : 'positive';
+    if (posScore === negScore) return 'neutral';
+    return posScore > negScore ? 'positive' : 'negative';
+  };
+
+  // 쓰레기 이미지 경로 매핑 함수
+  const getPaperImageSrc = (sentiment: SentimentType) => {
+    switch (sentiment) {
+      case 'positive':
+        return '/paper_pos.png';
+      case 'negative':
+        return '/paper_neg.png';
+      case 'neutral':
+      default:
+        return '/paper_neu.png';
+    }
   };
 
   const playTypeSound = () => {
@@ -233,7 +245,6 @@ export default function TypewriterApp() {
 
     const newY = Math.floor(Math.random() * 80) + 70;
 
-    // 감정 분석 결과 적용
     const sentiment = analyzeSentiment(text);
 
     const newPaper: DiscardedPaper = {
@@ -418,11 +429,11 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 감정에 따라 분기 처리된 버려진 종이들 */}
+      {/* 감정에 따라 분기 처리된 버려진 종이들 (긍정 / 부정 / 중립) */}
       {papers.map((paper) => (
         <img
           key={paper.id}
-          src={paper.sentiment === 'positive' ? '/paper_pos.png' : '/paper_neg.png'}
+          src={getPaperImageSrc(paper.sentiment)}
           alt={`${paper.sentiment} Discarded Paper`}
           onMouseDown={(e) => handleMouseDown(e, paper.id, paper.x, paper.y)}
           onTouchStart={(e) => handleTouchStart(e, paper.id, paper.x, paper.y)}
