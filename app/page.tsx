@@ -24,27 +24,8 @@ const NEGATIVE_WORDS = [
 ];
 
 export default function TypewriterApp() {
-  const [text, setText] = useState<string>(() => {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('typewriter_text') || '';
-    }
-    return '';
-  });
-
-  const [papers, setPapers] = useState<DiscardedPaper[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('typewriter_papers');
-      if (saved) {
-        try {
-          return JSON.parse(saved);
-        } catch (e) {
-          console.error('Failed to parse saved papers:', e);
-        }
-      }
-    }
-    return [];
-  });
-
+  const [text, setText] = useState<string>('');
+  const [papers, setPapers] = useState<DiscardedPaper[]>([]);
   const [selectedPaperText, setSelectedPaperText] = useState<string | null>(null);
   const [isHoveredBin, setIsHoveredBin] = useState(false);
   const [draggingId, setDraggingId] = useState<number | null>(null);
@@ -55,6 +36,21 @@ export default function TypewriterApp() {
   const binRef = useRef<HTMLDivElement | null>(null);
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const isDraggingRef = useRef(false);
+
+  // Client-side localStorage 초기화
+  useEffect(() => {
+    const savedText = localStorage.getItem('typewriter_text');
+    if (savedText) setText(savedText);
+
+    const savedPapers = localStorage.getItem('typewriter_papers');
+    if (savedPapers) {
+      try {
+        setPapers(JSON.parse(savedPapers));
+      } catch (e) {
+        console.error('Failed to parse saved papers:', e);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     localStorage.setItem('typewriter_text', text);
@@ -390,7 +386,7 @@ export default function TypewriterApp() {
         boxSizing: 'border-box'
       }}
     >
-      <style jsx global>{`
+      <style>{`
         .typewriter-wrapper {
           width: 90%;
           max-width: 850px;
