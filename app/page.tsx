@@ -157,25 +157,33 @@ export default function TypewriterApp() {
   };
 
   const handleDiscard = () => {
-    if (!text.trim()) {
-      alert('버릴 내용이 없습니다.');
-      return;
-    }
+  if (!text.trim()) {
+    alert('버릴 내용이 없습니다.');
+    return;
+  }
 
-    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
-    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
+  const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 1000;
+  const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 800;
 
-    const newPaper: DiscardedPaper = {
-      id: Date.now(),
-      text: text,
-      x: Math.floor(Math.random() * (windowWidth * 0.4)) + 50,
-      y: Math.floor(Math.random() * (windowHeight * 0.4)) + 100,
-      rotate: Math.floor(Math.random() * 360) - 180
-    };
+  // 타자기 영역(중앙)을 피해서 화면 좌/우 측면 상단 위주로 종이 배치
+  const isLeft = Math.random() > 0.5;
+  const newX = isLeft
+    ? Math.floor(Math.random() * (windowWidth * 0.2)) + 20 // 왼쪽 사이드
+    : Math.floor(Math.random() * (windowWidth * 0.2)) + (windowWidth * 0.75); // 오른쪽 사이드
 
-    setPapers((prev) => [...prev, newPaper]);
-    setText('');
+  const newY = Math.floor(Math.random() * (windowHeight * 0.3)) + 40; // 화면 상단 영역
+
+  const newPaper: DiscardedPaper = {
+    id: Date.now(),
+    text: text,
+    x: newX,
+    y: newY,
+    rotate: Math.floor(Math.random() * 60) - 30 // 과도한 회전 방지 (-30 deg ~ 30 deg)
   };
+
+  setPapers((prev) => [...prev, newPaper]);
+  setText('');
+};
 
   const handleMouseDown = (e: React.MouseEvent, id: number, paperX: number, paperY: number) => {
     e.preventDefault();
