@@ -191,14 +191,13 @@ export default function TypewriterApp() {
     }
 
     const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
-    const windowHeight = typeof window !== 'undefined' ? window.innerHeight : 640;
 
     const isLeft = Math.random() > 0.5;
     const newX = isLeft
       ? Math.floor(Math.random() * (windowWidth * 0.12)) + 10
-      : Math.floor(Math.random() * (windowWidth * 0.12)) + (windowWidth * 0.68);
+      : Math.floor(Math.random() * (windowWidth * 0.12)) + (windowWidth * 0.65);
 
-    const newY = Math.floor(Math.random() * (windowHeight * 0.15)) + 20;
+    const newY = Math.floor(Math.random() * 80) + 70;
 
     const newPaper: DiscardedPaper = {
       id: Date.now(),
@@ -329,22 +328,22 @@ export default function TypewriterApp() {
         backgroundColor: '#121212',
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
         alignItems: 'center',
-        padding: '20px 10px',
-        overflow: 'hidden',
+        padding: '10px 0 30px 0',
+        overflowX: 'hidden',
+        overflowY: 'auto',
         userSelect: 'none',
         boxSizing: 'border-box'
       }}
     >
-      {/* 큼직한 쓰레기통 */}
+      {/* 쓰레기통 */}
       <div
         ref={binRef}
         style={{
           position: 'absolute',
-          top: '20px',
-          right: '20px',
-          width: 'clamp(120px, 25vw, 180px)',
+          top: '15px',
+          right: '15px',
+          width: 'clamp(100px, 22vw, 160px)',
           zIndex: 30,
           transition: 'transform 0.2s ease',
           transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
@@ -371,7 +370,7 @@ export default function TypewriterApp() {
             position: 'absolute',
             left: `${paper.x}px`,
             top: `${paper.y}px`,
-            width: '100px',
+            width: 'clamp(80px, 18vw, 120px)',
             transform: `rotate(${paper.rotate}deg)`,
             zIndex: draggingId === paper.id ? 100 : 25,
             cursor: 'pointer',
@@ -381,15 +380,14 @@ export default function TypewriterApp() {
         />
       ))}
 
-      {/* 대형 타자기 전체 영역 (화면 전체 폭을 넘게 시원하게 확대) */}
+      {/* 모바일 100% 폭 대응 대형 타자기 */}
       <div
         style={{
           position: 'relative',
-          width: '135%',
-          maxWidth: '1000px',
+          width: '100vw',
+          maxWidth: '850px',
           aspectRatio: '4 / 3',
-          marginTop: '10px',
-          marginBottom: '-40px',
+          marginTop: '60px',
           zIndex: 1
         }}
       >
@@ -400,7 +398,7 @@ export default function TypewriterApp() {
             top: '20%',
             left: '36.8%',
             width: '26.4%',
-            height: '12%',
+            height: '12.5%',
             padding: '2px',
             boxSizing: 'border-box',
             zIndex: 3
@@ -421,7 +419,7 @@ export default function TypewriterApp() {
               backgroundColor: 'transparent',
               resize: 'none',
               fontFamily: 'Courier New, Courier, monospace',
-              fontSize: '14px',
+              fontSize: 'clamp(13px, 3.5vw, 18px)',
               lineHeight: '1.35',
               color: '#1a1a1a',
               textAlign: 'left',
@@ -454,7 +452,7 @@ export default function TypewriterApp() {
         />
       </div>
 
-      {/* 하단 버튼 그룹 (타자기 하단 위에 오버레이) */}
+      {/* 하단 버튼 그룹 */}
       <div
         style={{
           display: 'flex',
@@ -462,10 +460,10 @@ export default function TypewriterApp() {
           justifyContent: 'center',
           alignItems: 'center',
           flexWrap: 'wrap',
-          width: '100%',
-          maxWidth: '420px',
-          zIndex: 20,
-          marginBottom: '10px'
+          width: '90%',
+          maxWidth: '450px',
+          marginTop: '-20px',
+          zIndex: 20
         }}
       >
         <button
@@ -473,7 +471,7 @@ export default function TypewriterApp() {
           style={{
             flex: '1 1 calc(50% - 5px)',
             padding: '14px 16px',
-            fontSize: '13px',
+            fontSize: '14px',
             fontFamily: 'Courier New, monospace',
             color: '#ffffff',
             backgroundColor: '#2a2a2a',
@@ -491,7 +489,7 @@ export default function TypewriterApp() {
           style={{
             flex: '1 1 calc(50% - 5px)',
             padding: '14px 16px',
-            fontSize: '13px',
+            fontSize: '14px',
             fontFamily: 'Courier New, monospace',
             color: '#ffffff',
             backgroundColor: '#d9534f',
@@ -513,7 +511,7 @@ export default function TypewriterApp() {
             justifyContent: 'center',
             gap: '6px',
             padding: '14px 16px',
-            fontSize: '13px',
+            fontSize: '14px',
             fontFamily: 'Courier New, monospace',
             color: '#3C1E1E',
             backgroundColor: '#FEE500',
