@@ -28,7 +28,7 @@ interface FrameStyle {
 const FRAME_STYLES: FrameStyle[] = [
   {
     id: 'grid-vintage',
-    name: '📜 vintage ',
+    name: '📜 빈티지 원고지',
     bgColor: '#fbf8f1',
     bgPattern: 'radial-gradient(#e2d9cc 1px, transparent 1px)',
     textColor: '#2b2b2b',
@@ -38,7 +38,7 @@ const FRAME_STYLES: FrameStyle[] = [
   },
   {
     id: 'dark-typewriter',
-    name: '🖤 type letter',
+    name: '🖤 칠흑 타자기',
     bgColor: '#1e1e1e',
     bgPattern: 'radial-gradient(#333333 1px, transparent 1px)',
     textColor: '#e0e0e0',
@@ -48,7 +48,7 @@ const FRAME_STYLES: FrameStyle[] = [
   },
   {
     id: 'old-letter',
-    name: '☕ old style',
+    name: '☕ 올드 레터',
     bgColor: '#f4ede2',
     bgPattern: 'linear-gradient(to right, #e2d7c5 1px, transparent 1px)',
     textColor: '#3c2a1e',
@@ -58,7 +58,7 @@ const FRAME_STYLES: FrameStyle[] = [
   },
   {
     id: 'pastel-pink',
-    name: '🌸 mood',
+    name: '🌸 감성 파스텔',
     bgColor: '#fdf0f0',
     bgPattern: 'radial-gradient(#f4c7c7 1px, transparent 1px)',
     textColor: '#4a3535',
@@ -99,8 +99,10 @@ export default function TypewriterApp() {
   const previewCardRef = useRef<HTMLDivElement | null>(null);
   const discardedPreviewCardRef = useRef<HTMLDivElement | null>(null);
 
+  // 드래그 제어용 Ref
   const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const isDraggingRef = useRef(false);
+  const isMovedRef = useRef<boolean>(false);
+  const draggingIdRef = useRef<number | null>(null);
 
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
@@ -350,10 +352,10 @@ export default function TypewriterApp() {
     const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
     const isLeft = Math.random() > 0.5;
     const newX = isLeft
-      ? Math.floor(Math.random() * (windowWidth * 0.12)) + 10
-      : Math.floor(Math.random() * (windowWidth * 0.12)) + (windowWidth * 0.65);
+      ? Math.floor(Math.random() * (windowWidth * 0.15)) + 10
+      : Math.floor(Math.random() * (windowWidth * 0.15)) + (windowWidth * 0.6);
 
-    const newY = Math.floor(Math.random() * 80) + 70;
+    const newY = Math.floor(Math.random() * 100) + 80;
     const sentiment = analyzeSentiment(text);
     const randomRotate = Math.floor(Math.random() * 360) - 180;
 
@@ -376,127 +378,129 @@ export default function TypewriterApp() {
     if (selectedPaperText) setSelectedPaperText(null);
   };
 
-  const startDrag = (clientX: number, clientY: number, id: number, paperX: number, paperY: number) => {
-    setDraggingId(id);
-    isDraggingRef.current = false;
+  // ==================== 드래그 앤 드롭 로직 개선 ====================
+  const handleStartDrag = (
+    clientX: number,
+    clientY: number,
+    paper: DiscardedPaper,
+    e: React.SyntheticEvent
+  ) => {
+    e.stopPropagation();
+    isMovedRef.current = false;
+    draggingIdRef.current = paper.id;
+    setDraggingId(paper.id);
+
     dragOffsetRef.current = {
-      x: clientX - paperX,
-      y: clientY - paperY,
+      x: clientX - paper.x,
+      y: clientY - paper.y,
     };
   };
 
-  const handleMouseDown = (e: React.MouseEvent, id: number, paperX: number, paperY: number) => {
-    e.preventDefault();
-    startDrag(e.clientX, e.clientY, id, paperX, paperY);
-  };
-
-  const handleTouchStartDrag = (e: React.TouchEvent, id: number, paperX: number, paperY: number) => {
-    const touch = e.touches[0];
-    startDrag(touch.clientX, touch.clientY, id, paperX, paperY);
-  };
-
   useEffect(() => {
-    const processMove = (clientX: number, clientY: number) => {
-      if (draggingId === null) return;
-      isDraggingRef.current = true;
+    const handleMove = (clientX: number, clientY: number) => {
+      if (draggingIdRef.current === null) return;
+      isMovedRef.current = true;
 
       const newX = clientX - dragOffsetRef.current.x;
       const newY = clientY - dragOffsetRef.current.y;
 
       setPapers((prev) =>
-        prev.map((p) => (p.id === draggingId ? { ...p, x: newX, y: newY } : p))
+        prev.map((p) => (p.id === draggingIdRef.current ? { ...p, x: newX, y: newY } : p))
       );
 
+      // 쓰레기통 오버랩 영역 감지
       if (binRef.current) {
         const binRect = binRef.current.getBoundingClientRect();
         const isOver =
-          clientX >= binRect.left &&
-          clientX <= binRect.right &&
-          clientY >= binRect.top &&
-          clientY <= binRect.bottom;
+          clientX >= binRect.left - 20 &&
+          clientX <= binRect.right + 20 &&
+          clientY >= binRect.top - 20 &&
+          clientY <= binRect.bottom + 20;
 
         setIsHoveredBin(isOver);
       }
     };
 
-    const processEnd = (clientX: number, clientY: number) => {
-      if (draggingId === null) return;
+    const handleEnd = (clientX: number, clientY: number) => {
+      const activeId = draggingIdRef.current;
+      if (activeId === null) return;
 
       if (binRef.current) {
         const binRect = binRef.current.getBoundingClientRect();
         const isOver =
-          clientX >= binRect.left &&
-          clientX <= binRect.right &&
-          clientY >= binRect.top &&
-          clientY <= binRect.bottom;
+          clientX >= binRect.left - 20 &&
+          clientX <= binRect.right + 20 &&
+          clientY >= binRect.top - 20 &&
+          clientY <= binRect.bottom + 20;
 
         if (isOver) {
           playTrashSound();
-          setPapers((prev) => prev.filter((p) => p.id !== draggingId));
-        } else if (isDraggingRef.current) {
+          setPapers((prev) => prev.filter((p) => p.id !== activeId));
+        } else if (isMovedRef.current) {
           const angleShift = Math.floor(Math.random() * 30) - 15;
           setPapers((prev) =>
             prev.map((p) =>
-              p.id === draggingId ? { ...p, rotate: p.rotate + angleShift } : p
+              p.id === activeId ? { ...p, rotate: p.rotate + angleShift } : p
             )
           );
         }
       }
 
+      draggingIdRef.current = null;
       setDraggingId(null);
       setIsHoveredBin(false);
     };
 
-    const handleMouseMove = (e: MouseEvent) => processMove(e.clientX, e.clientY);
-    const handleMouseUp = (e: MouseEvent) => processEnd(e.clientX, e.clientY);
+    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
+    const onMouseUp = (e: MouseEvent) => handleEnd(e.clientX, e.clientY);
 
-    const handleTouchMove = (e: TouchEvent) => {
-      if (draggingId !== null) {
-        e.preventDefault();
+    const onTouchMove = (e: TouchEvent) => {
+      if (draggingIdRef.current !== null) {
         const touch = e.touches[0];
-        processMove(touch.clientX, touch.clientY);
+        handleMove(touch.clientX, touch.clientY);
       }
     };
 
-    const handleTouchEnd = (e: TouchEvent) => {
-      if (draggingId !== null) {
+    const onTouchEnd = (e: TouchEvent) => {
+      if (draggingIdRef.current !== null) {
         const touch = e.changedTouches[0];
-        processEnd(touch.clientX, touch.clientY);
+        handleEnd(touch.clientX, touch.clientY);
       }
     };
 
-    if (draggingId !== null) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
-      window.addEventListener('touchmove', handleTouchMove, { passive: false });
-      window.addEventListener('touchend', handleTouchEnd);
-    }
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    window.addEventListener('touchmove', onTouchMove, { passive: false });
+    window.addEventListener('touchend', onTouchEnd);
 
     return () => {
-      window.removeEventListener('mousemove', handleMouseMove);
-      window.removeEventListener('mouseup', handleMouseUp);
-      window.removeEventListener('touchmove', handleTouchMove);
-      window.removeEventListener('touchend', handleTouchEnd);
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+      window.removeEventListener('touchmove', onTouchMove);
+      window.removeEventListener('touchend', onTouchEnd);
     };
-  }, [draggingId]);
+  }, []);
 
   const handlePaperClick = (paperText: string) => {
-    if (!isDraggingRef.current) {
+    // 드래그가 아닌 단순 클릭/터치였을 때만 미리보기 열기
+    if (!isMovedRef.current) {
       setSelectedPaperText(paperText);
       setIsDiscardedPreviewOpen(true);
     }
   };
 
   const handleTouchStartSwipe = (e: React.TouchEvent) => {
+    if (draggingIdRef.current !== null) return;
     touchStartX.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchMoveSwipe = (e: React.TouchEvent) => {
+    if (draggingIdRef.current !== null) return;
     touchEndX.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchEndSwipe = () => {
-    if (!touchStartX.current || !touchEndX.current) return;
+    if (draggingIdRef.current !== null || !touchStartX.current || !touchEndX.current) return;
     const swipeDistance = touchStartX.current - touchEndX.current;
 
     if (swipeDistance > 70 && currentPage === 'typewriter') {
@@ -592,7 +596,7 @@ export default function TypewriterApp() {
             버린 종이들 모아보기 ▶
           </button>
 
-          {/* 우측 상단 쓰레기통 (크기 확대: 180px, zIndex: 10) */}
+          {/* 우측 상단 쓰레기통 (확대 크기: 180px, zIndex: 10) */}
           <div
             ref={binRef}
             style={{
@@ -609,14 +613,12 @@ export default function TypewriterApp() {
             <img src="/bin.png" alt="Trash Bin" style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
 
-          {/* 화면 상 바닥에 버려진 종이들 */}
+          {/* 화면 상 바닥에 버려진 종이들 (드래그 가능) */}
           {papers.map((paper) => (
-            <img
+            <div
               key={paper.id}
-              src={getPaperImageSrc(paper.sentiment)}
-              alt={`${paper.sentiment} Discarded Paper`}
-              onMouseDown={(e) => handleMouseDown(e, paper.id, paper.x, paper.y)}
-              onTouchStart={(e) => handleTouchStartDrag(e, paper.id, paper.x, paper.y)}
+              onMouseDown={(e) => handleStartDrag(e.clientX, e.clientY, paper, e)}
+              onTouchStart={(e) => handleStartDrag(e.touches[0].clientX, e.touches[0].clientY, paper, e)}
               onClick={() => handlePaperClick(paper.text)}
               style={{
                 position: 'absolute',
@@ -625,14 +627,20 @@ export default function TypewriterApp() {
                 width: '110px',
                 transform: `rotate(${paper.rotate}deg)`,
                 zIndex: draggingId === paper.id ? 100 : 25,
-                cursor: 'pointer',
+                cursor: 'grab',
                 touchAction: 'none',
                 transition: draggingId === paper.id ? 'none' : 'transform 0.1s ease',
               }}
-            />
+            >
+              <img
+                src={getPaperImageSrc(paper.sentiment)}
+                alt={`${paper.sentiment} Discarded Paper`}
+                style={{ width: '100%', height: 'auto', display: 'block', pointerEvents: 'none' }}
+              />
+            </div>
           ))}
 
-          {/* 타자기 프레임 (zIndex: 40으로 상위 배치) */}
+          {/* 타자기 프레임 (zIndex: 40으로 배치) */}
           <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 40 }}>
             <div
               style={{
@@ -838,7 +846,7 @@ export default function TypewriterApp() {
               📜 버려진 종이 조각들
             </h2>
             <p style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>
-              쓰레기통에 버린 종이는 나타나지 않습니다.
+              완전히 영구 삭제된 종이는 나타나지 않습니다.
             </p>
           </header>
 
@@ -913,7 +921,7 @@ export default function TypewriterApp() {
                         cursor: 'pointer',
                       }}
                     >
-                      🗑️ 쓰레기통에 버리기
+                      영구 삭제
                     </button>
                   </div>
                 </div>
