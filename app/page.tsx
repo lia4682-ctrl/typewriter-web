@@ -1,107 +1,7 @@
 'use client';
 
-'use client';
-
-import { useState, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
-
-// DB 데이터 타입 정의
-interface Paper {
-  id: number;
-  created_at: string;
-  content: string;
-  sentiment: string;
-  is_picked: boolean;
-}
-
-export default function MonologueApp() {
-  const [content, setContent] = useState('');
-  const [publicPapers, setPublicPapers] = useState<Paper[]>([]);
-
-  // 1. 아직 누군가 줍지 않은(is_picked: false) 남들의 쓰레기 글 목록 가져오기
-  const fetchTrash = async () => {
-    const { data, error } = await supabase
-      .from('papers')
-      .select('*')
-      .eq('is_picked', false)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('글 가져오기 오류:', error);
-    } else if (data) {
-      setPublicPapers(data);
-    }
-  };
-
-  // 화면 진입 시 타인의 쓰레기 글 불러오기
-  useEffect(() => {
-    fetchTrash();
-  }, []);
-
-  // 2. 글 버리기 버튼 동작 (DB insert)
-  const handleDiscard = async () => {
-    if (!content.trim()) return;
-
-    // 감정 분석 결과값 (기존 로직 사용)
-    const sentiment = 'neutral'; 
-
-    const { error } = await supabase.from('papers').insert([
-      {
-        content: content,
-        sentiment: sentiment,
-        is_picked: false,
-      },
-    ]);
-
-    if (error) {
-      alert('버리기에 실패했습니다.');
-      console.error(error);
-    } else {
-      alert('원고가 어둠 속으로 버려졌습니다.');
-      setContent('');
-      fetchTrash(); // 목록 갱신
-    }
-  };
-
-  // 3. 타인의 쓰레기 글 줍기 (is_picked -> true 업데이트)
-  const handlePickUp = async (paperId: number) => {
-    const { error } = await supabase
-      .from('papers')
-      .update({ is_picked: true })
-      .eq('id', paperId);
-
-    if (error) {
-      alert('주우는데 실패했습니다.');
-    } else {
-      alert('타인의 버려진 마음을 주웠습니다.');
-      fetchTrash(); // 줍고 난 후 목록에서 제외되도록 갱신
-    }
-  };
-
-  return (
-    <div style={{ padding: '20px' }}>
-      {/* 글 작성 영역 */}
-      <textarea
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
-        placeholder="버리고 싶은 마음의 글을 작성하세요..."
-      />
-      <button onClick={handleDiscard}>글 버리기</button>
-
-      {/* 타인의 버려진 쓰레기(글) 목록 영역 */}
-      <h3>누군가 버린 쓰레기들</h3>
-      <div>
-        {publicPapers.map((paper) => (
-          <div key={paper.id} style={{ border: '1px solid #ccc', margin: '10px 0', padding: '10px' }}>
-            <p>{paper.content}</p>
-            <button onClick={() => handlePickUp(paper.id)}>이 쓰레기 줍기</button>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
 import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
 import { toPng } from 'html-to-image';
 
 type SentimentType = 'positive' | 'negative' | 'neutral';
@@ -219,6 +119,33 @@ export default function TypewriterApp() {
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
+  // 1. Supabase에서 버려진 종이(is_picked: false) 데이터 가져오기
+  const fetchPapers = async () => {
+    const { data, error } = await supabase
+      .from('papers')
+      .select('*')
+      .eq('is_picked', false)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('글 가져오기 오류:', error);
+    } else if (data) {
+      const formattedPapers: DiscardedPaper[] = data.map((item) => ({
+        id: item.id,
+        text: item.content,
+        x: item.x_pos ?? 100,
+        y: item.y_pos ?? 100,
+        rotate: item.rotate ?? 0,
+        sentiment: (item.sentiment as SentimentType) || 'neutral',
+      }));
+      setPapers(formattedPapers);
+    }
+  };
+
+  useEffect(() => {
+    fetchPapers();
+  }, []);
+
   // 공유 받은 URL 쿼리 파라미터 감지 (?paper=...)
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -230,28 +157,6 @@ export default function TypewriterApp() {
       }
     }
   }, []);
-
-  useEffect(() => {
-    const savedText = localStorage.getItem('typewriter_text');
-    if (savedText) setText(savedText);
-
-    const savedPapers = localStorage.getItem('typewriter_papers');
-    if (savedPapers) {
-      try {
-        setPapers(JSON.parse(savedPapers));
-      } catch (e) {
-        console.error('Failed to parse saved papers:', e);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    localStorage.setItem('typewriter_text', text);
-  }, [text]);
-
-  useEffect(() => {
-    localStorage.setItem('typewriter_papers', JSON.stringify(papers));
-  }, [papers]);
 
   useEffect(() => {
     const initAudio = () => {
@@ -467,7 +372,6 @@ export default function TypewriterApp() {
     downloadImageFromRef(discardedPreviewCardRef, FRAME_STYLES[discardedFrameIndex].id, 'discarded_note');
   };
 
-  // 링크 복사하기 기능
   const handleCopyShareLink = (shareText: string) => {
     if (!shareText) return;
     const shareUrl = `${window.location.origin}${window.location.pathname}?paper=${encodeURIComponent(shareText)}`;
@@ -477,7 +381,8 @@ export default function TypewriterApp() {
     );
   };
 
-  const handleDiscard = () => {
+  // 2. 글 버리기 로직 (Supabase Insert)
+  const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
       return;
@@ -504,7 +409,7 @@ export default function TypewriterApp() {
     } else {
       const minX = Math.min(sectionWidth - paperWidth - margin, sectionWidth * 0.75);
       const maxX = sectionWidth - paperWidth - margin;
-      newX = Math.floor(Math.random() * (Math.max(1, maxX - minX + 1))) + minX;
+      newX = Math.floor(Math.random() * Math.max(1, maxX - minX + 1)) + minX;
     }
 
     const maxY = Math.max(80, sectionHeight - 200);
@@ -513,23 +418,40 @@ export default function TypewriterApp() {
     const sentiment = analyzeSentiment(text);
     const randomRotate = Math.floor(Math.random() * 360) - 180;
 
-    const newPaper: DiscardedPaper = {
-      id: Date.now(),
-      text: text,
-      x: newX,
-      y: newY,
-      rotate: randomRotate,
-      sentiment: sentiment,
-    };
+    const { error } = await supabase.from('papers').insert([
+      {
+        content: text,
+        sentiment: sentiment,
+        is_picked: false,
+        x_pos: newX,
+        y_pos: newY,
+        rotate: randomRotate,
+      },
+    ]);
 
-    setPapers((prev) => [...prev, newPaper]);
-    setText('');
+    if (error) {
+      alert('버리기에 실패했습니다.');
+      console.error(error);
+    } else {
+      setText('');
+      fetchPapers(); // DB 최신 목록 불러오기
+    }
   };
 
-  const handlePermanentDelete = (id: number) => {
+  // 3. 종이 줍기/삭제 (Supabase Update: is_picked -> true)
+  const handlePermanentDelete = async (id: number) => {
     playTrashSound();
-    setPapers((prev) => prev.filter((p) => p.id !== id));
-    if (selectedPaperText) setSelectedPaperText(null);
+    const { error } = await supabase
+      .from('papers')
+      .update({ is_picked: true })
+      .eq('id', id);
+
+    if (error) {
+      console.error('삭제 오류:', error);
+    } else {
+      setPapers((prev) => prev.filter((p) => p.id !== id));
+      if (selectedPaperText) setSelectedPaperText(null);
+    }
   };
 
   // ==================== 드래그 앤 드롭 제어 ====================
@@ -582,7 +504,7 @@ export default function TypewriterApp() {
       }
     };
 
-    const handleEnd = (clientX: number, clientY: number) => {
+    const handleEnd = async (clientX: number, clientY: number) => {
       const activeId = draggingIdRef.current;
       if (activeId === null) return;
 
@@ -595,15 +517,15 @@ export default function TypewriterApp() {
           clientY <= binRect.bottom + 20;
 
         if (isOver) {
-          playTrashSound();
-          setPapers((prev) => prev.filter((p) => p.id !== activeId));
+          handlePermanentDelete(activeId);
         } else if (isMovedRef.current) {
-          const angleShift = Math.floor(Math.random() * 30) - 15;
-          setPapers((prev) =>
-            prev.map((p) =>
-              p.id === activeId ? { ...p, rotate: p.rotate + angleShift } : p
-            )
-          );
+          const currentPaper = papers.find((p) => p.id === activeId);
+          if (currentPaper) {
+            await supabase
+              .from('papers')
+              .update({ x_pos: currentPaper.x, y_pos: currentPaper.y })
+              .eq('id', activeId);
+          }
         }
       }
 
@@ -640,7 +562,7 @@ export default function TypewriterApp() {
       window.removeEventListener('touchmove', onTouchMove);
       window.removeEventListener('touchend', onTouchEnd);
     };
-  }, []);
+  }, [papers]);
 
   const handlePaperClick = (paperText: string) => {
     if (!isMovedRef.current) {
@@ -736,7 +658,6 @@ export default function TypewriterApp() {
             overflow: 'hidden',
           }}
         >
-          {/* 우측 상단/중단 페이지 이동 버튼 */}
           <button
             onClick={() => setCurrentPage('trash')}
             style={{
@@ -758,7 +679,6 @@ export default function TypewriterApp() {
             버린 종이들 모아보기 ▶
           </button>
 
-          {/* 우측 상단 쓰레기통 */}
           <div
             ref={binRef}
             style={{
@@ -775,7 +695,6 @@ export default function TypewriterApp() {
             <img src="/bin.png" alt="Trash Bin" style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
 
-          {/* 타자기 화면 내부에 버려진 종이들 */}
           {papers.map((paper) => (
             <div
               key={paper.id}
@@ -802,7 +721,6 @@ export default function TypewriterApp() {
             </div>
           ))}
 
-          {/* 타자기 프레임 */}
           <div
             className="typewriter-wrapper"
             style={{
@@ -871,7 +789,6 @@ export default function TypewriterApp() {
             />
           </div>
 
-          {/* 하단 중앙 버튼 그룹 */}
           <div
             style={{
               position: 'absolute',
