@@ -4,31 +4,6 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toPng } from 'html-to-image';
 
-export default function Home() {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  // 마운트되기 전에는 아무것도 렌더링하지 않거나 로딩 상태를 보여줌
-  if (!mounted) {
-    return null;
-  }
-
-  return (
-    // 기존 return 전체 구문
-    <div>
-      ...
-    </div>
-  );
-}
-'use client';
-
-import React, { useState, useRef, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
-import { toPng } from 'html-to-image';
-
 type SentimentType = 'positive' | 'negative' | 'neutral';
 
 interface DiscardedPaper {
@@ -115,6 +90,9 @@ const NEGATIVE_WORDS = [
 ];
 
 export default function TypewriterApp() {
+  const [mounted, setMounted] = useState(false);
+  const [currentDateStr, setCurrentDateStr] = useState('');
+
   const [currentPage, setCurrentPage] = useState<'typewriter' | 'trash'>('typewriter');
   const [text, setText] = useState<string>('');
   const [papers, setPapers] = useState<DiscardedPaper[]>([]);
@@ -144,6 +122,12 @@ export default function TypewriterApp() {
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
+  // Client Hydration 처리 및 초기 날짜 설정
+  useEffect(() => {
+    setMounted(true);
+    setCurrentDateStr(new Date().toISOString().slice(0, 10));
+  }, []);
+
   // 1. Supabase에서 버려진 종이(is_picked: false) 데이터 가져오기
   const fetchPapers = async () => {
     const { data, error } = await supabase
@@ -168,8 +152,10 @@ export default function TypewriterApp() {
   };
 
   useEffect(() => {
-    fetchPapers();
-  }, []);
+    if (mounted) {
+      fetchPapers();
+    }
+  }, [mounted]);
 
   // 공유 받은 URL 쿼리 파라미터 감지 (?paper=...)
   useEffect(() => {
@@ -360,7 +346,7 @@ export default function TypewriterApp() {
   };
 
   const handleRandomFrame = () => {
-    let nextIndex;
+    let nextIndex: number;
     do {
       nextIndex = Math.floor(Math.random() * FRAME_STYLES.length);
     } while (nextIndex === currentFrameIndex && FRAME_STYLES.length > 1);
@@ -368,7 +354,7 @@ export default function TypewriterApp() {
   };
 
   const handleRandomDiscardedFrame = () => {
-    let nextIndex;
+    let nextIndex: number;
     do {
       nextIndex = Math.floor(Math.random() * FRAME_STYLES.length);
     } while (nextIndex === discardedFrameIndex && FRAME_STYLES.length > 1);
@@ -620,6 +606,11 @@ export default function TypewriterApp() {
     touchStartX.current = 0;
     touchEndX.current = 0;
   };
+
+  // 클라이언트 마운트 전에는 DOM 렌더링 방지 (Hydration mismatch 에러 해결)
+  if (!mounted) {
+    return null;
+  }
 
   const currentFrame = FRAME_STYLES[currentFrameIndex];
   const currentDiscardedFrame = FRAME_STYLES[discardedFrameIndex];
@@ -1124,7 +1115,7 @@ export default function TypewriterApp() {
                   }}
                 >
                   <span>{currentFrame.name.toUpperCase()}</span>
-                  <span>{new Date().toISOString().slice(0, 10)}</span>
+                  <span>{currentDateStr}</span>
                 </div>
 
                 <p
@@ -1272,7 +1263,7 @@ export default function TypewriterApp() {
                   }}
                 >
                   <span>{currentDiscardedFrame.name.toUpperCase()}</span>
-                  <span>{new Date().toISOString().slice(0, 10)}</span>
+                  <span>{currentDateStr}</span>
                 </div>
 
                 <p
