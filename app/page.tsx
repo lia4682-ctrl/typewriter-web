@@ -27,43 +27,53 @@ interface FrameStyle {
 
 const FRAME_STYLES: FrameStyle[] = [
   {
-    id: 'grid-vintage',
-    name: '📜 vintage ',
-    bgColor: '#fbf8f1',
-    bgPattern: 'radial-gradient(#e2d9cc 1px, transparent 1px)',
-    textColor: '#2b2b2b',
-    subTextColor: '#8c8275',
-    borderColor: '#2b2b2b',
-    fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+    id: 'monologue-3am',
+    name: 'Monologue at 3 AM',
+    bgColor: '#121318',
+    bgPattern: 'radial-gradient(#2b2e3b 1px, transparent 1px)',
+    textColor: '#e2e4ed',
+    subTextColor: '#626880',
+    borderColor: '#3a3e52',
+    fontFamily: 'var(--font-mona), monospace',
   },
   {
-    id: 'dark-typewriter',
-    name: '🖤 type-writer',
-    bgColor: '#1e1e1e',
-    bgPattern: 'radial-gradient(#333333 1px, transparent 1px)',
-    textColor: '#e0e0e0',
-    subTextColor: '#777777',
-    borderColor: '#444444',
-    fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
-  },
-  {
-    id: 'old-letter',
-    name: '☕ old letter',
-    bgColor: '#f4ede2',
-    bgPattern: 'linear-gradient(to right, #e2d7c5 1px, transparent 1px)',
-    textColor: '#3c2a1e',
-    subTextColor: '#9e8976',
-    borderColor: '#3c2a1e',
+    id: 'poetic-parchment',
+    name: 'Poetic Parchment',
+    bgColor: '#f7f4ed',
+    bgPattern: 'linear-gradient(#e5dec9 1px, transparent 1px), linear-gradient(90deg, #e5dec9 1px, transparent 1px)',
+    textColor: '#2c2825',
+    subTextColor: '#8c8273',
+    borderColor: '#4a4237',
     fontFamily: 'serif',
   },
   {
-    id: 'pastel-pink',
-    name: '🌸 mood pastel',
-    bgColor: '#fdf0f0',
-    bgPattern: 'radial-gradient(#f4c7c7 1px, transparent 1px)',
-    textColor: '#4a3535',
-    subTextColor: '#a88282',
-    borderColor: '#4a3535',
+    id: 'faded-blueprint',
+    name: 'Faded Blueprint',
+    bgColor: '#1a2634',
+    bgPattern: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
+    textColor: '#b2c9e0',
+    subTextColor: '#48688a',
+    borderColor: '#375270',
+    fontFamily: 'monospace',
+  },
+  {
+    id: 'midnight-rain',
+    name: 'Midnight Rain',
+    bgColor: '#0f171e',
+    bgPattern: 'linear-gradient(180deg, rgba(255,255,255,0.03) 50%, transparent 50%)',
+    textColor: '#d0d7de',
+    subTextColor: '#57606a',
+    borderColor: '#30363d',
+    fontFamily: 'serif',
+  },
+  {
+    id: 'rose-dust-memory',
+    name: 'Rose Dust Memory',
+    bgColor: '#fbf0ef',
+    bgPattern: 'radial-gradient(#e8c4c1 1.5px, transparent 1.5px)',
+    textColor: '#422c2b',
+    subTextColor: '#9e7370',
+    borderColor: '#6e4947',
     fontFamily: 'sans-serif',
   },
 ];
@@ -93,6 +103,7 @@ export default function TypewriterApp() {
   const [isDiscardedPreviewOpen, setIsDiscardedPreviewOpen] = useState(false);
   const [discardedFrameIndex, setDiscardedFrameIndex] = useState(0);
 
+  const typewriterSectionRef = useRef<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
   const binRef = useRef<HTMLDivElement | null>(null);
@@ -106,6 +117,18 @@ export default function TypewriterApp() {
 
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
+
+  // 공유 받은 URL 쿼리 파라미터 감지 (?paper=...)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const params = new URLSearchParams(window.location.search);
+      const sharedPaper = params.get('paper');
+      if (sharedPaper) {
+        setSelectedPaperText(sharedPaper);
+        setIsDiscardedPreviewOpen(true);
+      }
+    }
+  }, []);
 
   useEffect(() => {
     const savedText = localStorage.getItem('typewriter_text');
@@ -343,19 +366,49 @@ export default function TypewriterApp() {
     downloadImageFromRef(discardedPreviewCardRef, FRAME_STYLES[discardedFrameIndex].id, 'discarded_note');
   };
 
+  // 링크 복사하기 기능
+  const handleCopyShareLink = (shareText: string) => {
+    if (!shareText) return;
+    const shareUrl = `${window.location.origin}${window.location.pathname}?paper=${encodeURIComponent(shareText)}`;
+    navigator.clipboard.writeText(shareUrl).then(
+      () => alert('링크가 복사되었습니다! 친구에게 공유해보세요.'),
+      () => alert('링크 복사에 실패했습니다.')
+    );
+  };
+
   const handleDiscard = () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
       return;
     }
 
-    const windowWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
-    const isLeft = Math.random() > 0.5;
-    const newX = isLeft
-      ? Math.floor(Math.random() * (windowWidth * 0.15)) + 10
-      : Math.floor(Math.random() * (windowWidth * 0.15)) + (windowWidth * 0.6);
+    let sectionWidth = typeof window !== 'undefined' ? window.innerWidth : 360;
+    let sectionHeight = typeof window !== 'undefined' ? window.innerHeight : 600;
 
-    const newY = Math.floor(Math.random() * 100) + 80;
+    if (typewriterSectionRef.current) {
+      const rect = typewriterSectionRef.current.getBoundingClientRect();
+      sectionWidth = rect.width;
+      sectionHeight = rect.height;
+    }
+
+    const paperWidth = 110;
+    const margin = 20;
+    const isLeft = Math.random() > 0.5;
+
+    let newX: number;
+    if (isLeft) {
+      const minX = margin;
+      const maxX = Math.max(margin, sectionWidth * 0.25 - paperWidth);
+      newX = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+    } else {
+      const minX = Math.min(sectionWidth - paperWidth - margin, sectionWidth * 0.75);
+      const maxX = sectionWidth - paperWidth - margin;
+      newX = Math.floor(Math.random() * (Math.max(1, maxX - minX + 1))) + minX;
+    }
+
+    const maxY = Math.max(80, sectionHeight - 200);
+    const newY = Math.floor(Math.random() * (maxY - 80 + 1)) + 80;
+
     const sentiment = analyzeSentiment(text);
     const randomRotate = Math.floor(Math.random() * 360) - 180;
 
@@ -401,14 +454,21 @@ export default function TypewriterApp() {
       if (draggingIdRef.current === null) return;
       isMovedRef.current = true;
 
-      const newX = clientX - dragOffsetRef.current.x;
-      const newY = clientY - dragOffsetRef.current.y;
+      let sectionLeft = 0;
+      let sectionTop = 0;
+      if (typewriterSectionRef.current) {
+        const rect = typewriterSectionRef.current.getBoundingClientRect();
+        sectionLeft = rect.left;
+        sectionTop = rect.top;
+      }
+
+      const newX = clientX - sectionLeft - dragOffsetRef.current.x;
+      const newY = clientY - sectionTop - dragOffsetRef.current.y;
 
       setPapers((prev) =>
         prev.map((p) => (p.id === draggingIdRef.current ? { ...p, x: newX, y: newY } : p))
       );
 
-      // 쓰레기통 오버랩 감지
       if (binRef.current) {
         const binRect = binRef.current.getBoundingClientRect();
         const isOver =
@@ -563,6 +623,7 @@ export default function TypewriterApp() {
       >
         {/* ================= 1. 타자기 화면 ================= */}
         <section
+          ref={typewriterSectionRef}
           style={{
             width: '100vw',
             height: '100%',
@@ -571,6 +632,7 @@ export default function TypewriterApp() {
             justifyContent: 'center',
             alignItems: 'center',
             position: 'relative',
+            overflow: 'hidden',
           }}
         >
           {/* 우측 상단/중단 페이지 이동 버튼 */}
@@ -612,7 +674,7 @@ export default function TypewriterApp() {
             <img src="/bin.png" alt="Trash Bin" style={{ width: '100%', height: 'auto', display: 'block' }} />
           </div>
 
-          {/* 화면 상 바닥에 버려진 종이들 (zIndex 30으로 설정하여 선택 잘되도록 보장) */}
+          {/* 타자기 화면 내부에 버려진 종이들 */}
           {papers.map((paper) => (
             <div
               key={paper.id}
@@ -639,13 +701,13 @@ export default function TypewriterApp() {
             </div>
           ))}
 
-          {/* 타자기 프레임 (pointerEvents: 'none'을 주어 종이 클릭 방해 금지) */}
+          {/* 타자기 프레임 */}
           <div
             className="typewriter-wrapper"
             style={{
               position: 'relative',
               zIndex: 20,
-              pointerEvents: 'none', // 타자기 전체의 마우스/터치 이벤트 클릭 투과
+              pointerEvents: 'none',
             }}
           >
             <div
@@ -658,7 +720,7 @@ export default function TypewriterApp() {
                 padding: '20px 2px 2px 2px',
                 boxSizing: 'border-box',
                 zIndex: 3,
-                pointerEvents: 'auto', // 텍스트 입력창 부분만 클릭 가능하도록 재설정
+                pointerEvents: 'auto',
               }}
             >
               <textarea
@@ -730,7 +792,7 @@ export default function TypewriterApp() {
                   flex: 1,
                   padding: '12px 6px',
                   fontSize: '13px',
-                  fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+                  fontFamily: 'var(--font-mona), monospace',
                   color: '#ffffff',
                   backgroundColor: '#2a2a2a',
                   border: '1px solid #444444',
@@ -753,7 +815,7 @@ export default function TypewriterApp() {
                   flex: 1.2,
                   padding: '12px 6px',
                   fontSize: '13px',
-                  fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+                  fontFamily: 'var(--font-mona), monospace',
                   color: '#ffffff',
                   backgroundColor: '#2a2a2a',
                   border: '1px solid #444444',
@@ -776,7 +838,7 @@ export default function TypewriterApp() {
                   flex: 1,
                   padding: '12px 6px',
                   fontSize: '13px',
-                  fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+                  fontFamily: 'var(--font-mona), monospace',
                   color: '#ffffff',
                   backgroundColor: '#d9534f',
                   border: 'none',
@@ -800,7 +862,7 @@ export default function TypewriterApp() {
                 width: '100%',
                 padding: '12px 8px',
                 fontSize: '13px',
-                fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
+                fontFamily: 'var(--font-mona), monospace',
                 color: '#ffffff',
                 backgroundColor: '#2a2a2a',
                 border: '1px solid #444444',
@@ -853,7 +915,7 @@ export default function TypewriterApp() {
               📜 버려진 종이 조각들
             </h2>
             <p style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>
-              쓰레기통에 버린 종이는 나타나지 않습니다.
+              완전히 영구 삭제된 종이는 나타나지 않습니다.
             </p>
           </header>
 
@@ -910,11 +972,27 @@ export default function TypewriterApp() {
                   <div
                     style={{
                       display: 'flex',
-                      justifyContent: 'flex-end',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
                       paddingTop: '8px',
                       borderTop: '1px solid #383838',
                     }}
                   >
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopyShareLink(paper.text);
+                      }}
+                      style={{
+                        backgroundColor: 'transparent',
+                        color: '#888',
+                        border: 'none',
+                        fontSize: '11px',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      🔗 공유
+                    </button>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -928,7 +1006,7 @@ export default function TypewriterApp() {
                         cursor: 'pointer',
                       }}
                     >
-                      🗑️ 쓰레기통
+                      영구 삭제
                     </button>
                   </div>
                 </div>
@@ -1002,7 +1080,7 @@ export default function TypewriterApp() {
                     letterSpacing: '1px',
                   }}
                 >
-                  <span>VINTAGE TYPEWRITER</span>
+                  <span>{currentFrame.name.toUpperCase()}</span>
                   <span>{new Date().toISOString().slice(0, 10)}</span>
                 </div>
 
@@ -1034,7 +1112,7 @@ export default function TypewriterApp() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px', width: '100%' }}>
               <button
                 onClick={handleRandomFrame}
                 style={{
@@ -1045,15 +1123,30 @@ export default function TypewriterApp() {
                   border: '1px solid #555555',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  fontSize: '13px',
+                  fontSize: '12px',
                 }}
               >
-                🎲 프레임 변경
+                🎲 Frame
+              </button>
+              <button
+                onClick={() => handleCopyShareLink(text)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#2b3e50',
+                  color: '#ffffff',
+                  border: '1px solid #48688a',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                🔗 Link Share
               </button>
               <button
                 onClick={handleDownloadImage}
                 style={{
-                  flex: 1,
+                  flex: 1.2,
                   padding: '12px',
                   backgroundColor: '#ffffff',
                   color: '#000000',
@@ -1061,10 +1154,10 @@ export default function TypewriterApp() {
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
-                  fontSize: '13px',
+                  fontSize: '12px',
                 }}
               >
-                💾 이미지 저장
+                💾 Save PNG
               </button>
             </div>
           </div>
@@ -1135,7 +1228,7 @@ export default function TypewriterApp() {
                     letterSpacing: '1px',
                   }}
                 >
-                  <span>DISCARDED NOTE</span>
+                  <span>{currentDiscardedFrame.name.toUpperCase()}</span>
                   <span>{new Date().toISOString().slice(0, 10)}</span>
                 </div>
 
@@ -1167,7 +1260,7 @@ export default function TypewriterApp() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '10px', marginTop: '20px', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px', width: '100%' }}>
               <button
                 onClick={handleRandomDiscardedFrame}
                 style={{
@@ -1178,15 +1271,30 @@ export default function TypewriterApp() {
                   border: '1px solid #555555',
                   borderRadius: '8px',
                   cursor: 'pointer',
-                  fontSize: '13px',
+                  fontSize: '12px',
                 }}
               >
-                🎲 프레임 변경
+                🎲 Frame
+              </button>
+              <button
+                onClick={() => handleCopyShareLink(selectedPaperText)}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#2b3e50',
+                  color: '#ffffff',
+                  border: '1px solid #48688a',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '12px',
+                }}
+              >
+                🔗 Link Share
               </button>
               <button
                 onClick={handleDownloadDiscardedImage}
                 style={{
-                  flex: 1,
+                  flex: 1.2,
                   padding: '12px',
                   backgroundColor: '#ffffff',
                   color: '#000000',
@@ -1194,10 +1302,10 @@ export default function TypewriterApp() {
                   borderRadius: '8px',
                   cursor: 'pointer',
                   fontWeight: 'bold',
-                  fontSize: '13px',
+                  fontSize: '12px',
                 }}
               >
-                💾 이미지 저장
+                💾 Save PNG
               </button>
             </div>
           </div>
