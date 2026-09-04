@@ -119,7 +119,7 @@ export default function TypewriterApp() {
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
-  // 1. Supabase에서 버려진 종이(is_picked: false) 데이터 가져오기
+  // 1. Supabase 데이터 Fetch 및 Realtime 구독
   const fetchPapers = async () => {
     const { data, error } = await supabase
       .from('papers')
@@ -144,9 +144,25 @@ export default function TypewriterApp() {
 
   useEffect(() => {
     fetchPapers();
+
+    // Supabase Realtime 채널 구독
+    const channel = supabase
+      .channel('papers_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'papers' },
+        () => {
+          fetchPapers();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
-  // 공유 받은 URL 쿼리 파라미터 감지 (?paper=...)
+  // 공유 링크 쿼리 파라미터 감지 (?paper=...)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -158,6 +174,7 @@ export default function TypewriterApp() {
     }
   }, []);
 
+  // 오디오 컨텍스트 초기화
   useEffect(() => {
     const initAudio = () => {
       if (!audioCtxRef.current) {
@@ -350,10 +367,15 @@ export default function TypewriterApp() {
     setDiscardedFrameIndex(nextIndex);
   };
 
+  // 안정화된 html-to-image 캡처 함수
   const downloadImageFromRef = async (ref: React.RefObject<HTMLDivElement | null>, frameId: string, prefix: string) => {
     if (!ref.current) return;
     try {
-      const dataUrl = await toPng(ref.current, { cacheBust: true, pixelRatio: 2 });
+      const dataUrl = await toPng(ref.current, { 
+        cacheBust: true, 
+        pixelRatio: 2,
+        skipAutoScale: true,
+      });
       const link = document.createElement('a');
       link.download = `${prefix}_${frameId}_${new Date().toISOString().slice(0, 10)}.png`;
       link.href = dataUrl;
@@ -381,7 +403,7 @@ export default function TypewriterApp() {
     );
   };
 
-  // 2. 글 버리기 로직 (Supabase Insert)
+  // 글 버리기
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -434,11 +456,11 @@ export default function TypewriterApp() {
       console.error(error);
     } else {
       setText('');
-      fetchPapers(); // DB 최신 목록 불러오기
+      fetchPapers();
     }
   };
 
-  // 3. 종이 줍기/삭제 (Supabase Update: is_picked -> true)
+  // 영구 삭제 처리
   const handlePermanentDelete = async (id: number) => {
     playTrashSound();
     const { error } = await supabase
@@ -454,7 +476,7 @@ export default function TypewriterApp() {
     }
   };
 
-  // ==================== 드래그 앤 드롭 제어 ====================
+  // 드래그 시작
   const handleStartDrag = (
     clientX: number,
     clientY: number,
@@ -539,6 +561,7 @@ export default function TypewriterApp() {
 
     const onTouchMove = (e: TouchEvent) => {
       if (draggingIdRef.current !== null) {
+        if (e.cancelable) e.preventDefault(); // 스크롤 동작 방지
         const touch = e.touches[0];
         handleMove(touch.clientX, touch.clientY);
       }
@@ -571,6 +594,7 @@ export default function TypewriterApp() {
     }
   };
 
+  // 모바일 스와이프 제어
   const handleTouchStartSwipe = (e: React.TouchEvent) => {
     if (draggingIdRef.current !== null) return;
     touchStartX.current = e.targetTouches[0].clientX;
@@ -634,7 +658,7 @@ export default function TypewriterApp() {
         }
       `}</style>
 
-      {/* 좌/우 슬라이드 터치 영역 */}
+      {/* 메인 슬라이드 레이아웃 */}
       <div
         style={{
           display: 'flex',
@@ -644,7 +668,7 @@ export default function TypewriterApp() {
           transform: currentPage === 'typewriter' ? 'translateX(0)' : 'translateX(-100vw)',
         }}
       >
-        {/* ================= 1. 타자기 화면 ================= */}
+        {/* ================= 1. 타자기 메인 화면 ================= */}
         <section
           ref={typewriterSectionRef}
           style={{
@@ -745,6 +769,7 @@ export default function TypewriterApp() {
               <textarea
                 ref={textareaRef}
                 value={text}
+                maxLength={1000}
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="타자기를 치듯 글을 작성해보세요..."
@@ -899,7 +924,7 @@ export default function TypewriterApp() {
           </div>
         </section>
 
-        {/* ================= 2. 버린 종이들 모아보기 공간 (우측 화면) ================= */}
+        {/* ================= 2. 버린 종이 목록 공간 ================= */}
         <section
           style={{
             width: '100vw',
@@ -1052,6 +1077,7 @@ export default function TypewriterApp() {
             zIndex: 250,
             padding: '20px',
             boxSizing: 'border-box',
+            touchAction: 'none',
           }}
         >
           <div
@@ -1200,6 +1226,7 @@ export default function TypewriterApp() {
             zIndex: 250,
             padding: '20px',
             boxSizing: 'border-box',
+            touchAction: 'none',
           }}
         >
           <div
@@ -1345,6 +1372,7 @@ export default function TypewriterApp() {
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 300,
+            touchAction: 'none',
           }}
         >
           <div
