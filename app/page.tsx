@@ -1,5 +1,106 @@
 'use client';
 
+'use client';
+
+import { useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase';
+
+// DB 데이터 타입 정의
+interface Paper {
+  id: number;
+  created_at: string;
+  content: string;
+  sentiment: string;
+  is_picked: boolean;
+}
+
+export default function MonologueApp() {
+  const [content, setContent] = useState('');
+  const [publicPapers, setPublicPapers] = useState<Paper[]>([]);
+
+  // 1. 아직 누군가 줍지 않은(is_picked: false) 남들의 쓰레기 글 목록 가져오기
+  const fetchTrash = async () => {
+    const { data, error } = await supabase
+      .from('papers')
+      .select('*')
+      .eq('is_picked', false)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      console.error('글 가져오기 오류:', error);
+    } else if (data) {
+      setPublicPapers(data);
+    }
+  };
+
+  // 화면 진입 시 타인의 쓰레기 글 불러오기
+  useEffect(() => {
+    fetchTrash();
+  }, []);
+
+  // 2. 글 버리기 버튼 동작 (DB insert)
+  const handleDiscard = async () => {
+    if (!content.trim()) return;
+
+    // 감정 분석 결과값 (기존 로직 사용)
+    const sentiment = 'neutral'; 
+
+    const { error } = await supabase.from('papers').insert([
+      {
+        content: content,
+        sentiment: sentiment,
+        is_picked: false,
+      },
+    ]);
+
+    if (error) {
+      alert('버리기에 실패했습니다.');
+      console.error(error);
+    } else {
+      alert('원고가 어둠 속으로 버려졌습니다.');
+      setContent('');
+      fetchTrash(); // 목록 갱신
+    }
+  };
+
+  // 3. 타인의 쓰레기 글 줍기 (is_picked -> true 업데이트)
+  const handlePickUp = async (paperId: number) => {
+    const { error } = await supabase
+      .from('papers')
+      .update({ is_picked: true })
+      .eq('id', paperId);
+
+    if (error) {
+      alert('주우는데 실패했습니다.');
+    } else {
+      alert('타인의 버려진 마음을 주웠습니다.');
+      fetchTrash(); // 줍고 난 후 목록에서 제외되도록 갱신
+    }
+  };
+
+  return (
+    <div style={{ padding: '20px' }}>
+      {/* 글 작성 영역 */}
+      <textarea
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        placeholder="버리고 싶은 마음의 글을 작성하세요..."
+      />
+      <button onClick={handleDiscard}>글 버리기</button>
+
+      {/* 타인의 버려진 쓰레기(글) 목록 영역 */}
+      <h3>누군가 버린 쓰레기들</h3>
+      <div>
+        {publicPapers.map((paper) => (
+          <div key={paper.id} style={{ border: '1px solid #ccc', margin: '10px 0', padding: '10px' }}>
+            <p>{paper.content}</p>
+            <button onClick={() => handlePickUp(paper.id)}>이 쓰레기 줍기</button>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 import React, { useState, useRef, useEffect } from 'react';
 import { toPng } from 'html-to-image';
 
