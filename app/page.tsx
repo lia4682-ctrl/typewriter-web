@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { supabase } from '@/lib/supabase';
+import { supabase } from '../lib/supabase';
 import { toPng } from 'html-to-image';
 
 type SentimentType = 'positive' | 'negative' | 'neutral';
