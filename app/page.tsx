@@ -4,6 +4,31 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toPng } from 'html-to-image';
 
+export default function Home() {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  // 마운트되기 전에는 아무것도 렌더링하지 않거나 로딩 상태를 보여줌
+  if (!mounted) {
+    return null;
+  }
+
+  return (
+    // 기존 return 전체 구문
+    <div>
+      ...
+    </div>
+  );
+}
+'use client';
+
+import React, { useState, useRef, useEffect } from 'react';
+import { supabase } from '../lib/supabase';
+import { toPng } from 'html-to-image';
+
 type SentimentType = 'positive' | 'negative' | 'neutral';
 
 interface DiscardedPaper {
