@@ -6,6 +6,10 @@ import { toPng } from 'html-to-image';
 
 type SentimentType = 'positive' | 'negative' | 'neutral';
 
+git add -f lib/supabase.ts
+git commit -m "fix: add supabase client lib"
+git push origin main
+
 interface DiscardedPaper {
   id: number;
   text: string;
