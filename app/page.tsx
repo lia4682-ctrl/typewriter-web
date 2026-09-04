@@ -92,6 +92,7 @@ const NEGATIVE_WORDS = [
 export default function TypewriterApp() {
   const [mounted, setMounted] = useState(false);
   const [currentDateStr, setCurrentDateStr] = useState('');
+  const [paperDateStr, setPaperDateStr] = useState('');
 
   const [currentPage, setCurrentPage] = useState<'typewriter' | 'trash'>('typewriter');
   const [text, setText] = useState<string>('');
@@ -122,10 +123,20 @@ export default function TypewriterApp() {
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
-  // Client Hydration 처리 및 초기 날짜 설정
+  // Client Hydration 처리 및 초기 날짜 세팅 (SSR/CSR 불일치 해결)
   useEffect(() => {
     setMounted(true);
-    setCurrentDateStr(new Date().toISOString().slice(0, 10));
+
+    const today = new Date();
+    setCurrentDateStr(today.toISOString().slice(0, 10));
+
+    // 타자기 종이 상단 날짜 포맷 (예: SEPTEMBER 2, 2026)
+    const formattedPaperDate = today.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric',
+    }).toUpperCase();
+    setPaperDateStr(formattedPaperDate);
   }, []);
 
   // 1. Supabase에서 버려진 종이(is_picked: false) 데이터 가져오기
@@ -364,7 +375,7 @@ export default function TypewriterApp() {
   const downloadImageFromRef = async (ref: React.RefObject<HTMLDivElement | null>, frameId: string, prefix: string) => {
     if (!ref.current) return;
     try {
-      const dataUrl = await toPng(ref.current, { cacheBust: true, pixelRatio: 2 });
+      const dataUrl = await toPng(ref.current, { cacheBust: true, pixelRatio: 2, skipFonts: true });
       const link = document.createElement('a');
       link.download = `${prefix}_${frameId}_${new Date().toISOString().slice(0, 10)}.png`;
       link.href = dataUrl;
@@ -607,9 +618,9 @@ export default function TypewriterApp() {
     touchEndX.current = 0;
   };
 
-  // 클라이언트 마운트 전에는 DOM 렌더링 방지 (Hydration mismatch 에러 해결)
+  // 클라이언트 마운트 전에는 빈 배경만 렌더링 (Hydration mismatch 방지)
   if (!mounted) {
-    return null;
+    return <main style={{ backgroundColor: '#121212', height: '100vh', width: '100vw' }} />;
   }
 
   const currentFrame = FRAME_STYLES[currentFrameIndex];
@@ -631,12 +642,22 @@ export default function TypewriterApp() {
       }}
     >
       <style>{`
+        @import url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/UnJaeum.woff');
+
+        @font-face {
+          font-family: 'UnJaeum';
+          src: url('https://fastly.jsdelivr.net/gh/projectnoonnu/noonfonts_two@1.0/UnJaeum.woff') format('woff');
+          font-weight: normal;
+          font-style: normal;
+        }
+
         .typewriter-wrapper {
           width: 90%;
           max-width: 850px;
           aspect-ratio: 4 / 3.3;
         }
         .typewriter-textarea {
+          font-family: 'UnJaeum', var(--font-mona), monospace;
           font-size: 14px;
         }
         @media (max-width: 500px) {
@@ -756,8 +777,27 @@ export default function TypewriterApp() {
                 boxSizing: 'border-box',
                 zIndex: 3,
                 pointerEvents: 'auto',
+                display: 'flex',
+                flexDirection: 'column',
               }}
             >
+              {/* 종이 상단 날짜 표시 (Hydration 안전 처리) */}
+              {paperDateStr && (
+                <div
+                  style={{
+                    fontSize: '10px',
+                    color: '#555',
+                    textAlign: 'center',
+                    fontFamily: 'UnJaeum, sans-serif',
+                    marginBottom: '4px',
+                    letterSpacing: '1px',
+                  }}
+                  suppressHydrationWarning
+                >
+                  {paperDateStr}
+                </div>
+              )}
+
               <textarea
                 ref={textareaRef}
                 value={text}
@@ -773,7 +813,6 @@ export default function TypewriterApp() {
                   outline: 'none',
                   backgroundColor: 'transparent',
                   resize: 'none',
-                  fontFamily: 'var(--font-mona), var(--font-special-elite), monospace',
                   lineHeight: '1.4',
                   color: '#1a1a1a',
                   textAlign: 'left',
@@ -1115,7 +1154,7 @@ export default function TypewriterApp() {
                   }}
                 >
                   <span>{currentFrame.name.toUpperCase()}</span>
-                  <span>{currentDateStr}</span>
+                  <span suppressHydrationWarning>{currentDateStr}</span>
                 </div>
 
                 <p
@@ -1263,7 +1302,7 @@ export default function TypewriterApp() {
                   }}
                 >
                   <span>{currentDiscardedFrame.name.toUpperCase()}</span>
-                  <span>{currentDateStr}</span>
+                  <span suppressHydrationWarning>{currentDateStr}</span>
                 </div>
 
                 <p
