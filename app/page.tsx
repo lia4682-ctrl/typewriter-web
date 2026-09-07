@@ -496,7 +496,7 @@ export default function TypewriterApp() {
   };
 
   if (!mounted) {
-    return <main style={{ backgroundColor: '#000000', height: '100vh', width: '100vw' }} />;
+    return <main style={{ backgroundColor: '#000000', height: '100dvh', width: '100vw' }} />;
   }
 
   const myFloorPapers = allPapers.filter(
@@ -512,7 +512,7 @@ export default function TypewriterApp() {
       onMouseUp={handleMouseUp}
       style={{
         position: 'relative',
-        height: '100vh',
+        height: '100dvh',
         width: '100vw',
         backgroundColor: '#000000',
         overflow: 'hidden',
@@ -549,13 +549,14 @@ export default function TypewriterApp() {
           .typewriter-container {
             width: 100%;
             max-width: 100%;
-            padding: 0 10px;
+            padding: 0 12px;
+            box-sizing: border-box;
           }
           .typewriter-input-wrapper {
-            top: 17.5%;
-            left: 35.8%;
-            width: 28.4%;
-            height: 16%;
+            top: 17%;
+            left: 32%;
+            width: 36%;
+            height: 18%;
             padding: 10px 1px 1px 1px;
           }
         }
@@ -606,14 +607,14 @@ export default function TypewriterApp() {
         <section
           style={{
             width: '100vw',
-            height: '100vh',
+            height: '100dvh',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
             position: 'relative',
             boxSizing: 'border-box',
-            paddingBottom: '120px',
+            paddingBottom: '130px',
           }}
         >
           <img
@@ -774,13 +775,13 @@ export default function TypewriterApp() {
           <div
             style={{
               position: 'fixed',
-              bottom: '20px',
+              bottom: '16px',
               left: '50%',
               transform: 'translateX(-50%)',
-              width: '100%',
+              width: 'calc(100% - 32px)',
               maxWidth: '420px',
               backgroundColor: 'transparent',
-              padding: '0 16px',
+              padding: '0',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
@@ -826,7 +827,7 @@ export default function TypewriterApp() {
         <section
           style={{
             width: '100vw',
-            height: '100%',
+            height: '100dvh',
             backgroundColor: '#000000',
             color: '#e0e0e0',
             padding: '40px 20px',
@@ -1080,7 +1081,7 @@ export default function TypewriterApp() {
 const modalBgStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0, left: 0,
-  width: '100vw', height: '100vh',
+  width: '100vw', height: '100dvh',
   backgroundColor: 'rgba(0,0,0,0.85)',
   display: 'flex', justifyContent: 'center', alignItems: 'center',
   zIndex: 300,
