@@ -542,7 +542,7 @@ export default function TypewriterApp() {
         }
         .typewriter-input-wrapper {
           position: absolute;
-          top: 24%;
+          top: 10%;/*상단으로 올림 */
           left: 32%;
           width: 36%;
           height: 14%;
@@ -811,7 +811,7 @@ export default function TypewriterApp() {
                 onClick={() => setIsKakaoModalOpen(true)}
                 style={{ flex: 1, width: '100%', padding: '12px 6px', fontSize: '13px', color: '#fff', backgroundColor: '#2a2a2a', border: '1px solid #444', borderRadius: '10px', cursor: 'pointer' }}
               >
-                ☕ 카카오페이로 커피 한 잔 선물하기
+                ☕ 개발자에게 커피 한 잔 선물하기
               </button>
             </div>
           </div>
