@@ -421,11 +421,9 @@ export default function TypewriterApp() {
     });
   };
 
-  // 프레임 이미지로 저장하는 함수 (html2canvas 라이브러리 활용 혹은 순수 DOM 대책)
   const handleSaveFrameAsImage = async (cardRef: React.RefObject<HTMLDivElement | null>, frameName: string) => {
     if (!cardRef.current) return;
     try {
-      // html2canvas 동적 로드
       const html2canvas = (await import('html2canvas')).default;
       const canvas = await html2canvas(cardRef.current, {
         scale: 2,
@@ -501,7 +499,7 @@ export default function TypewriterApp() {
   };
 
   if (!mounted) {
-    return <main style={{ backgroundColor: '#121212', height: '100vh', width: '100vw' }} />;
+    return <main style={{ backgroundColor: '#343434', height: '100vh', width: '100vw' }} />;
   }
 
   const myFloorPapers = allPapers.filter(
@@ -519,14 +517,7 @@ export default function TypewriterApp() {
         position: 'relative',
         height: '100vh',
         width: '100vw',
-        backgroundColor: '#121212',
-        // 배경 다각화: 은은한 방사형 그라데이션과 미세한 그리드 패턴 추가
-        backgroundImage: `
-          radial-gradient(circle at 50% 50%, #1a1f2c 0%, #101216 100%),
-          linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px)
-        `,
-        backgroundSize: '100% 100%, 40px 40px, 40px 40px',
+        backgroundColor: '#343434',
         overflow: 'hidden',
         userSelect: 'none',
       }}
