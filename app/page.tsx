@@ -532,9 +532,9 @@ export default function TypewriterApp() {
         }
         .typewriter-input-wrapper {
           position: absolute;
-          top: 16%; /* 위쪽 여백을 더 주어 아래로 내림 */
-          left: 33%; /* 왼쪽 시작점을 오른쪽으로 더 당김 */
-          width: 34%; /* 가로 폭을 더 줄여서 양옆이 안 삐져나가게 함 */
+          top: 18%;
+          left: 33%;
+          width: 34%;
           height: 15%;
           padding: 8px;
           box-sizing: border-box;
@@ -552,10 +552,10 @@ export default function TypewriterApp() {
             margin-bottom: 90px;
           }
           .typewriter-input-wrapper {
-            top: 14%;
-            left: 26%;
-            width: 48%;
-            height: 17%;
+            top: 25%; /* 모바일에서 종이 위치에 맞게 아래로 내림 */
+            left: 27%; /* 모바일 화면 비율에 맞춰 왼쪽 조정 */
+            width: 46%; /* 모바일 종이 폭에 맞춤 */
+            height: 14%;
           }
         }
       `}</style>
