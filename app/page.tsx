@@ -527,10 +527,36 @@ export default function TypewriterApp() {
           margin: 0 auto;
           position: relative;
         }
+        .typewriter-input-wrapper {
+          position: absolute;
+          top: 18.5%;
+          left: 36.8%;
+          width: 26.4%;
+          height: 14%;
+          padding: 20px 2px 2px 2px;
+          box-sizing: border-box;
+          z-index: 3;
+          display: flex;
+          flex-direction: column;
+        }
         @media (max-width: 768px) {
           .typewriter-container {
             width: 95%;
             max-width: 420px;
+          }
+        }
+        @media (max-width: 400px) {
+          .typewriter-container {
+            width: 100%;
+            max-width: 100%;
+            padding: 0 10px;
+          }
+          .typewriter-input-wrapper {
+            top: 17.5%;
+            left: 35.8%;
+            width: 28.4%;
+            height: 16%;
+            padding: 10px 1px 1px 1px;
           }
         }
       `}</style>
@@ -587,7 +613,7 @@ export default function TypewriterApp() {
             alignItems: 'center',
             position: 'relative',
             boxSizing: 'border-box',
-            paddingBottom: '110px',
+            paddingBottom: '120px',
           }}
         >
           <img
@@ -697,20 +723,7 @@ export default function TypewriterApp() {
           })}
 
           <div className="typewriter-container">
-            <div
-              style={{
-                position: 'absolute',
-                top: '18.5%',
-                left: '36.8%',
-                width: '26.4%',
-                height: '14%',
-                padding: '20px 2px 2px 2px',
-                boxSizing: 'border-box',
-                zIndex: 3,
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
+            <div className="typewriter-input-wrapper">
               {paperDateStr && (
                 <div style={{ fontSize: '10px', color: '#555', textAlign: 'center', marginBottom: '4px' }}>
                   {paperDateStr}
@@ -761,11 +774,9 @@ export default function TypewriterApp() {
           <div
             style={{
               position: 'fixed',
-              bottom: '24px',
-              left: '0',
-              right: '0',
-              marginLeft: 'auto',
-              marginRight: 'auto',
+              bottom: '20px',
+              left: '50%',
+              transform: 'translateX(-50%)',
               width: '100%',
               maxWidth: '420px',
               backgroundColor: 'transparent',
