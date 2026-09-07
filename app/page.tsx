@@ -542,16 +542,16 @@ export default function TypewriterApp() {
         }
         .typewriter-input-wrapper {
           position: absolute;
-          top: 17%;/*상단으로 올림 */
-          left: 33%;
-          width: 32%;
-          height: 20%;
+          top: 15%; /* 빨간색 박스 영역 */
+          left: 26%;
+          width: 48%;
+          height: 18%;
           padding: 4px;
           box-sizing: border-box;
           z-index: 3;
           display: flex;
           flex-direction: column;
-          justify-content: center;
+          justify-content: flex-start;
           align-items: center;
         }
         @media (max-width: 768px) {
