@@ -113,7 +113,7 @@ export default function TypewriterApp() {
           return {
             id: Number(item.id),
             created_at: item.created_at,
-            text: item.content || item.text || '',
+            text: item.content || '',
             x,
             y,
             rotate: Math.floor(Math.random() * 40) - 20,
@@ -159,7 +159,7 @@ export default function TypewriterApp() {
     }
   };
 
-  // 1. 종이 버리기 (데이터베이스 연동 보완)
+  // 1. 종이 버리기 (content 컬럼만 사용하여 에러 해결)
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -168,11 +168,9 @@ export default function TypewriterApp() {
 
     const sentiment = analyzeSentiment(text);
 
-    // DB 스키마 안전성 보장 (content & text 모두 전달)
     const { error } = await supabase.from('papers').insert([
       {
         content: text,
-        text: text,
         sentiment: sentiment,
         is_picked: false,
         user_id: String(userId),
@@ -307,7 +305,7 @@ export default function TypewriterApp() {
             position: 'relative',
           }}
         >
-          {/* ✏️ 좌측 상단 연필 아이콘 (크기 크게 변경) */}
+          {/* ✏️ 좌측 상단 연필 아이콘 (대폭 확대) */}
           <button
             onClick={() => setShowProfileModal(true)}
             style={{
@@ -316,16 +314,16 @@ export default function TypewriterApp() {
               top: '25px',
               backgroundColor: 'transparent',
               border: 'none',
-              fontSize: '36px',
+              fontSize: '80px',
               cursor: 'pointer',
               zIndex: 100,
               opacity: 0.85,
               transition: 'transform 0.2s ease, opacity 0.2s ease',
-              filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))',
+              filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.7))',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.opacity = '1';
-              e.currentTarget.style.transform = 'scale(1.15)';
+              e.currentTarget.style.transform = 'scale(1.1)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.opacity = '0.85';
@@ -336,7 +334,7 @@ export default function TypewriterApp() {
             ✏️
           </button>
 
-          {/* 🗑️ 우측 상단 쓰레기통 이미지 (크기 크게 변경) */}
+          {/* 🗑️ 우측 상단 쓰레기통 이미지 (대폭 확대) */}
           <img
             ref={trashBinRef}
             src="/bin.png"
@@ -345,16 +343,16 @@ export default function TypewriterApp() {
               position: 'absolute',
               right: '30px',
               top: '25px',
-              width: '54px',
+              width: '120px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
               zIndex: 100,
               transition: 'transform 0.2s ease, filter 0.2s ease',
-              transform: isBinHovered ? 'scale(1.25)' : 'scale(1)',
+              transform: isBinHovered ? 'scale(1.15)' : 'scale(1)',
               filter: isBinHovered
-                ? 'drop-shadow(0 0 10px rgba(217, 83, 79, 0.9))'
-                : 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))',
+                ? 'drop-shadow(0 0 16px rgba(217, 83, 79, 0.9))'
+                : 'drop-shadow(0 4px 10px rgba(0,0,0,0.7))',
             }}
             title="드래그해서 여기 놓으면 완전히 삭제됩니다"
           />
