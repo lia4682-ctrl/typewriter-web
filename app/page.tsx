@@ -2,7 +2,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
-import { toPng } from 'html-to-image';
 
 type SentimentType = 'positive' | 'negative' | 'neutral';
 
@@ -94,7 +93,7 @@ const NEGATIVE_WORDS = [
   '포기', '최악', '눈물', '불안', '걱정', '절망', '상처', '외롭', '답답', '후회'
 ];
 
-// 타자기 중앙 영역 좌표 제외 (타자기 및 하단 버튼과 겹침 방지)
+// 중앙 타자기 영역과 겹치지 않도록 좌표 설정
 const generateNonOverlappingPos = () => {
   let x = 0;
   let y = 0;
@@ -104,8 +103,7 @@ const generateNonOverlappingPos = () => {
     x = Math.floor(Math.random() * 80) + 5; // 5% ~ 85%
     y = Math.floor(Math.random() * 80) + 5; // 5% ~ 85%
 
-    // 타자기 및 하단 UI 영역 (x: 25~75%, y: 15~85%) 배제
-    if (x > 22 && x < 78 && y > 15 && y < 88) {
+    if (x > 22 && x < 78 && y > 15 && y < 85) {
       isOverlap = true;
     } else {
       isOverlap = false;
@@ -117,7 +115,6 @@ const generateNonOverlappingPos = () => {
 
 export default function TypewriterApp() {
   const [mounted, setMounted] = useState(false);
-  const [currentDateStr, setCurrentDateStr] = useState('');
   const [paperDateStr, setPaperDateStr] = useState('');
 
   const [userId, setUserId] = useState<string>('');
@@ -125,7 +122,7 @@ export default function TypewriterApp() {
   const [currentPage, setCurrentPage] = useState<'typewriter' | 'trash'>('typewriter');
   const [trashTab, setTrashTab] = useState<'others' | 'mine'>('others');
   const [text, setText] = useState<string>('');
-  const [papers, setPapers] = useState<DiscardedPaper[]>([]);
+  
   const [allPapers, setAllPapers] = useState<DiscardedPaper[]>([]);
   const [selectedPaper, setSelectedPaper] = useState<DiscardedPaper | null>(null);
   const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
@@ -135,35 +132,26 @@ export default function TypewriterApp() {
   const [isDiscardedPreviewOpen, setIsDiscardedPreviewOpen] = useState(false);
   const [discardedFrameIndex, setDiscardedFrameIndex] = useState(0);
 
-  // 드래그 상태 관리
-  const [draggingPaperId, setDraggingPaperId] = useState<number | null>(null);
+  // 드래그앤드롭 상태
+  const [draggingPaper, setDraggingPaper] = useState<DiscardedPaper | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isBinHovered, setIsBinHovered] = useState(false);
 
-  const trashBinRef = useRef<HTMLDivElement | null>(null);
-  const typewriterSectionRef = useRef<HTMLElement | null>(null);
+  const trashBinRef = useRef<HTMLImageElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const previewCardRef = useRef<HTMLDivElement | null>(null);
-  const discardedPreviewCardRef = useRef<HTMLDivElement | null>(null);
-
-  const touchStartX = useRef<number>(0);
-  const touchEndX = useRef<number>(0);
 
   useEffect(() => {
     setMounted(true);
 
-    // 고유 익명 사용자 ID 부여 (localStorage)
     let storedUserId = localStorage.getItem('typewriter_user_id');
     if (!storedUserId) {
-      storedUserId = 'user_' + Math.random().toString(36).substring(2) + Date.now().toString(36);
+      storedUserId = 'user_' + Math.random().toString(36).substring(2, 9);
       localStorage.setItem('typewriter_user_id', storedUserId);
     }
     setUserId(storedUserId);
 
     const today = new Date();
-    setCurrentDateStr(today.toISOString().slice(0, 10));
-
     const formattedPaperDate = today.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -187,17 +175,14 @@ export default function TypewriterApp() {
       if (data) {
         const formattedPapers: DiscardedPaper[] = data.map((item) => {
           const { x, y } = generateNonOverlappingPos();
-          const randomRotate = Math.floor(Math.random() * 40) - 20;
-          const randomScale = 0.85 + Math.random() * 0.3;
-
           return {
             id: item.id,
             created_at: item.created_at,
             text: item.content || item.text || '',
             x,
             y,
-            rotate: randomRotate,
-            scale: randomScale,
+            rotate: Math.floor(Math.random() * 40) - 20,
+            scale: 0.85 + Math.random() * 0.3,
             sentiment: (item.sentiment as SentimentType) || 'neutral',
             user_id: item.user_id,
             picked_by: item.picked_by,
@@ -206,8 +191,6 @@ export default function TypewriterApp() {
         });
 
         setAllPapers(formattedPapers);
-        // 바닥에는 아직 아무도 줍지 않은 종이만 뿌림
-        setPapers(formattedPapers.filter((p) => !p.is_picked));
       }
     } catch (err) {
       console.error('Fetch exception:', err);
@@ -249,37 +232,45 @@ export default function TypewriterApp() {
   };
 
   const playTrashSound = () => {
-    if (!audioCtxRef.current) return;
-    const ctx = audioCtxRef.current;
-    if (ctx.state === 'suspended') ctx.resume();
+    try {
+      if (!audioCtxRef.current) {
+        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        audioCtxRef.current = new AudioCtx();
+      }
+      const ctx = audioCtxRef.current;
+      if (ctx.state === 'suspended') ctx.resume();
 
-    const duration = 0.25;
-    const bufferSize = ctx.sampleRate * duration;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
+      const duration = 0.2;
+      const bufferSize = ctx.sampleRate * duration;
+      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buffer.getChannelData(0);
 
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = Math.random() * 2 - 1;
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = Math.random() * 2 - 1;
+      }
+
+      const noise = ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'highpass';
+      filter.frequency.setValueAtTime(1000, ctx.currentTime);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.5, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(ctx.destination);
+
+      noise.start();
+    } catch (e) {
+      console.error(e);
     }
-
-    const noise = ctx.createBufferSource();
-    noise.buffer = buffer;
-
-    const filter = ctx.createBiquadFilter();
-    filter.type = 'highpass';
-    filter.frequency.setValueAtTime(1200, ctx.currentTime);
-
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0.6, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-
-    noise.connect(filter);
-    filter.connect(gain);
-    gain.connect(ctx.destination);
-
-    noise.start();
   };
 
+  // 1. 종이 버리기 (작성 중인 글)
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -287,7 +278,6 @@ export default function TypewriterApp() {
     }
 
     const sentiment = analyzeSentiment(text);
-
     const payload = {
       content: text,
       sentiment: sentiment,
@@ -301,72 +291,92 @@ export default function TypewriterApp() {
       alert('버리기에 실패했습니다.');
       console.error(error);
     } else {
-      alert('원고가 바닥으로 버려졌습니다.');
       setText('');
       fetchPapers();
     }
   };
 
+  // 2. 타인의 종이 주우기
   const handlePickUp = async (paperId: number) => {
     playTrashSound();
-    const payload = {
-      is_picked: true,
-      picked_by: userId,
-    };
-
     const { error } = await supabase
       .from('papers')
-      .update(payload)
+      .update({
+        is_picked: true,
+        picked_by: userId,
+      })
       .eq('id', paperId);
 
     if (error) {
       alert('주우는데 실패했습니다.');
       console.error('수거 오류:', error);
     } else {
-      alert('타인의 버려진 마음을 주웠습니다!');
       setSelectedPaper(null);
       setIsDiscardedPreviewOpen(false);
       fetchPapers();
     }
   };
 
-  // 드래그 시작
-  const handleMouseDownPaper = (e: React.MouseEvent, paperId: number) => {
+  // 3. 완전히 삭제하기 (쓰레기통 드래그 앤 드롭 완료 시)
+  const handleDeletePaper = async (paperId: number) => {
+    playTrashSound();
+    const { error } = await supabase
+      .from('papers')
+      .delete()
+      .eq('id', paperId);
+
+    if (error) {
+      console.error('삭제 오류:', error);
+      alert('삭제에 실패했습니다.');
+    } else {
+      fetchPapers();
+    }
+  };
+
+  // 드래그 관련 이벤트
+  const handleMouseDownPaper = (e: React.MouseEvent, paper: DiscardedPaper) => {
     e.stopPropagation();
-    setDraggingPaperId(paperId);
+    setDraggingPaper(paper);
     setDragPos({ x: e.clientX, y: e.clientY });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
-    if (!draggingPaperId) return;
+    if (!draggingPaper) return;
     setDragPos({ x: e.clientX, y: e.clientY });
 
     if (trashBinRef.current) {
       const rect = trashBinRef.current.getBoundingClientRect();
       const isInside =
-        e.clientX >= rect.left &&
-        e.clientX <= rect.right &&
-        e.clientY >= rect.top &&
-        e.clientY <= rect.bottom;
+        e.clientX >= rect.left - 10 &&
+        e.clientX <= rect.right + 10 &&
+        e.clientY >= rect.top - 10 &&
+        e.clientY <= rect.bottom + 10;
       setIsBinHovered(isInside);
     }
   };
 
   const handleMouseUp = async () => {
-    if (draggingPaperId && isBinHovered) {
-      await handlePickUp(draggingPaperId);
+    if (draggingPaper) {
+      if (isBinHovered) {
+        await handleDeletePaper(draggingPaper.id);
+      }
+      setDraggingPaper(null);
+      setIsBinHovered(false);
     }
-    setDraggingPaperId(null);
-    setIsBinHovered(false);
   };
 
   if (!mounted) {
     return <main style={{ backgroundColor: '#121212', height: '100vh', width: '100vw' }} />;
   }
 
-  // 탭별 필터링
-  const myPapers = allPapers.filter((p) => p.user_id === userId || p.picked_by === userId);
-  const othersPapers = allPapers.filter((p) => p.user_id !== userId && p.picked_by !== userId && !p.is_picked);
+  // 타자기 바닥에는 내가 작성해서 버린 글 + 내가 주운 글만 표출
+  const myFloorPapers = allPapers.filter(
+    (p) => p.user_id === userId || (p.is_picked && p.picked_by === userId)
+  );
+
+  // 모아보기 페이지용 데이터
+  const othersPapers = allPapers.filter((p) => p.user_id !== userId && !p.is_picked);
+  const myCollectedPapers = allPapers.filter((p) => p.user_id === userId || p.picked_by === userId);
 
   return (
     <main
@@ -411,7 +421,6 @@ export default function TypewriterApp() {
       >
         {/* 1. 타자기 화면 */}
         <section
-          ref={typewriterSectionRef}
           style={{
             width: '100vw',
             height: '100%',
@@ -423,7 +432,7 @@ export default function TypewriterApp() {
             overflow: 'hidden',
           }}
         >
-          {/* 우측 상단 쓰레기통 아이콘 (bin.png) 및 모아보기 버튼 */}
+          {/* 상단 우측: 날것의 bin.png 쓰레기통 이미지 & 모아보기 버튼 */}
           <div
             style={{
               position: 'absolute',
@@ -431,28 +440,25 @@ export default function TypewriterApp() {
               top: '25px',
               display: 'flex',
               alignItems: 'center',
-              gap: '12px',
+              gap: '16px',
               zIndex: 100,
             }}
           >
-            <div
+            <img
               ref={trashBinRef}
+              src="/bin.png"
+              alt="Trash Bin"
               style={{
-                width: '54px',
-                height: '54px',
-                borderRadius: '50%',
-                backgroundColor: isBinHovered ? 'rgba(217, 83, 79, 0.4)' : 'rgba(255, 255, 255, 0.1)',
-                border: isBinHovered ? '2px dashed #d9534f' : '1px solid rgba(255, 255, 255, 0.2)',
-                display: 'flex',
-                justifyContent: 'center',
-                alignItems: 'center',
-                transition: 'all 0.2s ease',
-                transform: isBinHovered ? 'scale(1.15)' : 'scale(1)',
+                width: '48px',
+                height: '48px',
+                objectFit: 'contain',
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease, filter 0.2s ease',
+                transform: isBinHovered ? 'scale(1.25)' : 'scale(1)',
+                filter: isBinHovered ? 'drop-shadow(0 0 8px rgba(217, 83, 79, 0.8))' : 'none',
               }}
-              title="쓰레기를 여기로 드래그해서 버리세요"
-            >
-              <img src="/bin.png" alt="Trash Bin" style={{ width: '32px', height: '32px', objectFit: 'contain' }} />
-            </div>
+              title="쓰레기를 여기로 끌어다 놓으면 완전 삭제됩니다"
+            />
 
             <button
               onClick={() => setCurrentPage('trash')}
@@ -471,13 +477,13 @@ export default function TypewriterApp() {
             </button>
           </div>
 
-          {/* 바닥에 흩뿌려진 종이 조각들 */}
-          {papers.map((paper) => {
-            const isDragging = draggingPaperId === paper.id;
+          {/* 내 타자기 바닥에 뿌려진 쓰레기들 (내가 작성한 것 + 내가 주운 것) */}
+          {myFloorPapers.map((paper) => {
+            const isDragging = draggingPaper?.id === paper.id;
             return (
               <div
                 key={paper.id}
-                onMouseDown={(e) => handleMouseDownPaper(e, paper.id)}
+                onMouseDown={(e) => handleMouseDownPaper(e, paper)}
                 onClick={() => {
                   if (!isDragging) {
                     setSelectedPaper(paper);
@@ -495,7 +501,7 @@ export default function TypewriterApp() {
                   zIndex: isDragging ? 200 : 30,
                   cursor: isDragging ? 'grabbing' : 'grab',
                   transition: isDragging ? 'none' : 'transform 0.2s ease',
-                  opacity: isDragging ? 0.8 : 1,
+                  opacity: isDragging ? 0.85 : 1,
                 }}
               >
                 <img
@@ -671,7 +677,7 @@ export default function TypewriterApp() {
                   backgroundColor: trashTab === 'mine' ? '#444' : 'transparent', color: trashTab === 'mine' ? '#fff' : '#888',
                 }}
               >
-                🕯️ 내가 흘린 & 주운 마음 ({myPapers.length})
+                🕯️ 내가 흘린 & 주운 마음 ({myCollectedPapers.length})
               </button>
             </div>
           </header>
@@ -686,12 +692,12 @@ export default function TypewriterApp() {
               paddingBottom: '60px',
             }}
           >
-            {(trashTab === 'others' ? othersPapers : myPapers).length === 0 ? (
+            {(trashTab === 'others' ? othersPapers : myCollectedPapers).length === 0 ? (
               <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#666', padding: '60px 0' }}>
                 {trashTab === 'others' ? '타인의 버려진 종이가 없습니다.' : '내가 버리거나 주운 종이가 없습니다.'}
               </div>
             ) : (
-              (trashTab === 'others' ? othersPapers : myPapers).map((paper, index) => {
+              (trashTab === 'others' ? othersPapers : myCollectedPapers).map((paper, index) => {
                 const isMine = paper.user_id === userId;
                 const isPickedByMe = paper.picked_by === userId;
 
@@ -773,7 +779,7 @@ export default function TypewriterApp() {
       {isPreviewOpen && (
         <div onClick={() => setIsPreviewOpen(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 250, padding: '20px' }}>
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%' }}>
-            <div ref={previewCardRef} style={{ backgroundColor: FRAME_STYLES[currentFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[currentFrameIndex].textColor, borderRadius: '8px', minHeight: '400px' }}>
+            <div style={{ backgroundColor: FRAME_STYLES[currentFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[currentFrameIndex].textColor, borderRadius: '8px', minHeight: '400px' }}>
               <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{text}</p>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
@@ -784,11 +790,11 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* 종이 상세 모달 */}
+      {/* 버린 종이 상세 모달 */}
       {isDiscardedPreviewOpen && selectedPaper && (
         <div onClick={() => setIsDiscardedPreviewOpen(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 250, padding: '20px' }}>
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%' }}>
-            <div ref={discardedPreviewCardRef} style={{ backgroundColor: FRAME_STYLES[discardedFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[discardedFrameIndex].textColor, borderRadius: '8px', minHeight: '400px' }}>
+            <div style={{ backgroundColor: FRAME_STYLES[discardedFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[discardedFrameIndex].textColor, borderRadius: '8px', minHeight: '400px' }}>
               <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{selectedPaper.text}</p>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
@@ -801,7 +807,7 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* 후원 모달 */}
+      {/* 커피 후원 모달 */}
       {isKakaoModalOpen && (
         <div onClick={() => setIsKakaoModalOpen(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 300 }}>
           <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: '#222', padding: '24px', borderRadius: '16px', textAlign: 'center', color: '#fff', maxWidth: '320px', border: '1px solid #444' }}>
