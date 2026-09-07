@@ -542,7 +542,7 @@ export default function TypewriterApp() {
         }
         .typewriter-input-wrapper {
           position: absolute;
-          top: 10%;/*상단으로 올림 */
+          top: 20%;/*상단으로 올림 */
           left: 32%;
           width: 36%;
           height: 14%;
