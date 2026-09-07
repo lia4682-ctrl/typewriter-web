@@ -19,89 +19,38 @@ interface DiscardedPaper {
   is_picked?: boolean;
 }
 
-interface FrameStyle {
-  id: string;
-  name: string;
-  bgColor: string;
-  bgPattern: string;
-  textColor: string;
-  subTextColor: string;
-  borderColor: string;
-  fontFamily: string;
-}
-
-const FRAME_STYLES: FrameStyle[] = [
+const FRAME_STYLES = [
   {
     id: 'monologue-3am',
     name: 'Monologue at 3 AM',
     bgColor: '#121318',
-    bgPattern: 'radial-gradient(#2b2e3b 1px, transparent 1px)',
     textColor: '#e2e4ed',
-    subTextColor: '#626880',
-    borderColor: '#3a3e52',
-    fontFamily: 'var(--font-mona), monospace',
   },
   {
     id: 'poetic-parchment',
     name: 'Poetic Parchment',
     bgColor: '#f7f4ed',
-    bgPattern: 'linear-gradient(#e5dec9 1px, transparent 1px), linear-gradient(90deg, #e5dec9 1px, transparent 1px)',
     textColor: '#2c2825',
-    subTextColor: '#8c8273',
-    borderColor: '#4a4237',
-    fontFamily: 'serif',
   },
   {
     id: 'faded-blueprint',
     name: 'Faded Blueprint',
     bgColor: '#1a2634',
-    bgPattern: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
     textColor: '#b2c9e0',
-    subTextColor: '#48688a',
-    borderColor: '#375270',
-    fontFamily: 'monospace',
-  },
-  {
-    id: 'midnight-rain',
-    name: 'Midnight Rain',
-    bgColor: '#0f171e',
-    bgPattern: 'linear-gradient(180deg, rgba(255,255,255,0.03) 50%, transparent 50%)',
-    textColor: '#d0d7de',
-    subTextColor: '#57606a',
-    borderColor: '#30363d',
-    fontFamily: 'serif',
-  },
-  {
-    id: 'rose-dust-memory',
-    name: 'Rose Dust Memory',
-    bgColor: '#fbf0ef',
-    bgPattern: 'radial-gradient(#e8c4c1 1.5px, transparent 1.5px)',
-    textColor: '#422c2b',
-    subTextColor: '#9e7370',
-    borderColor: '#6e4947',
-    fontFamily: 'sans-serif',
   },
 ];
 
-const POSITIVE_WORDS = [
-  '좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나',
-  '희망', '웃음', '설레', '최고', '완벽', '따뜻', '평화', '성공', '응원', '빛나'
-];
+const POSITIVE_WORDS = ['좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나', '희망'];
+const NEGATIVE_WORDS = ['싫어', '싫다', '짜증', '슬프', '힘들', '우울', '화나', '아프', '지쳐', '괴로', '포기'];
 
-const NEGATIVE_WORDS = [
-  '싫어', '싫다', '짜증', '슬프', '힘들', '우울', '화나', '아프', '지쳐', '괴로',
-  '포기', '최악', '눈물', '불안', '걱정', '절망', '상처', '외롭', '답답', '후회'
-];
-
-// 중앙 타자기 영역과 겹치지 않도록 좌표 설정
 const generateNonOverlappingPos = () => {
   let x = 0;
   let y = 0;
   let isOverlap = true;
 
   while (isOverlap) {
-    x = Math.floor(Math.random() * 80) + 5; // 5% ~ 85%
-    y = Math.floor(Math.random() * 80) + 5; // 5% ~ 85%
+    x = Math.floor(Math.random() * 80) + 5;
+    y = Math.floor(Math.random() * 80) + 5;
 
     if (x > 22 && x < 78 && y > 15 && y < 85) {
       isOverlap = true;
@@ -109,14 +58,12 @@ const generateNonOverlappingPos = () => {
       isOverlap = false;
     }
   }
-
   return { x, y };
 };
 
 export default function TypewriterApp() {
   const [mounted, setMounted] = useState(false);
   const [paperDateStr, setPaperDateStr] = useState('');
-
   const [userId, setUserId] = useState<string>('');
 
   const [currentPage, setCurrentPage] = useState<'typewriter' | 'trash'>('typewriter');
@@ -125,41 +72,46 @@ export default function TypewriterApp() {
   
   const [allPapers, setAllPapers] = useState<DiscardedPaper[]>([]);
   const [selectedPaper, setSelectedPaper] = useState<DiscardedPaper | null>(null);
-  const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
 
+  // 모달 상태
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isDiscardedPreviewOpen, setIsDiscardedPreviewOpen] = useState(false);
   const [discardedFrameIndex, setDiscardedFrameIndex] = useState(0);
 
-  // 드래그앤드롭 상태
+  // 드래그앤드롭
   const [draggingPaper, setDraggingPaper] = useState<DiscardedPaper | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isBinHovered, setIsBinHovered] = useState(false);
 
   const trashBinRef = useRef<HTMLImageElement | null>(null);
-  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
-  const audioCtxRef = useRef<AudioContext | null>(null);
 
   useEffect(() => {
     setMounted(true);
 
+    // 식별용 로그인/사용자 ID 관리 (localStorage)
     let storedUserId = localStorage.getItem('typewriter_user_id');
     if (!storedUserId) {
-      storedUserId = 'user_' + Math.random().toString(36).substring(2, 9);
+      // 8자리 무작위 숫자로 고유 ID 생성 (예: 010-8472-1928 또는 사용자 고유 번호)
+      const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
+      storedUserId = `010-${randomNum.substring(0, 4)}-${randomNum.substring(4)}`;
       localStorage.setItem('typewriter_user_id', storedUserId);
     }
     setUserId(storedUserId);
 
     const today = new Date();
-    const formattedPaperDate = today.toLocaleDateString('en-US', {
-      month: 'long',
-      day: 'numeric',
-      year: 'numeric',
-    }).toUpperCase();
-    setPaperDateStr(formattedPaperDate);
+    setPaperDateStr(
+      today.toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+        year: 'numeric',
+      }).toUpperCase()
+    );
   }, []);
 
+  // Supabase 데이터 불러오기 (안전한 쿼리 처리)
   const fetchPapers = async () => {
     try {
       const { data, error } = await supabase
@@ -184,16 +136,16 @@ export default function TypewriterApp() {
             rotate: Math.floor(Math.random() * 40) - 20,
             scale: 0.85 + Math.random() * 0.3,
             sentiment: (item.sentiment as SentimentType) || 'neutral',
-            user_id: item.user_id,
-            picked_by: item.picked_by,
-            is_picked: item.is_picked,
+            user_id: String(item.user_id || ''),
+            picked_by: String(item.picked_by || ''),
+            is_picked: Boolean(item.is_picked),
           };
         });
 
         setAllPapers(formattedPapers);
       }
     } catch (err) {
-      console.error('Fetch exception:', err);
+      console.error('Fetch 예외 발생:', err);
     }
   };
 
@@ -206,13 +158,10 @@ export default function TypewriterApp() {
     let negScore = 0;
 
     POSITIVE_WORDS.forEach((word) => {
-      const matches = inputText.match(new RegExp(word, 'g'));
-      if (matches) posScore += matches.length;
+      if (inputText.includes(word)) posScore++;
     });
-
     NEGATIVE_WORDS.forEach((word) => {
-      const matches = inputText.match(new RegExp(word, 'g'));
-      if (matches) negScore += matches.length;
+      if (inputText.includes(word)) negScore++;
     });
 
     if (posScore === negScore) return 'neutral';
@@ -221,56 +170,13 @@ export default function TypewriterApp() {
 
   const getPaperImageSrc = (sentiment: SentimentType) => {
     switch (sentiment) {
-      case 'positive':
-        return '/paper_pos.png';
-      case 'negative':
-        return '/paper_neg.png';
-      case 'neutral':
-      default:
-        return '/paper_neu.png';
+      case 'positive': return '/paper_pos.png';
+      case 'negative': return '/paper_neg.png';
+      default: return '/paper_neu.png';
     }
   };
 
-  const playTrashSound = () => {
-    try {
-      if (!audioCtxRef.current) {
-        const AudioCtx = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
-        audioCtxRef.current = new AudioCtx();
-      }
-      const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') ctx.resume();
-
-      const duration = 0.2;
-      const bufferSize = ctx.sampleRate * duration;
-      const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-      const data = buffer.getChannelData(0);
-
-      for (let i = 0; i < bufferSize; i++) {
-        data[i] = Math.random() * 2 - 1;
-      }
-
-      const noise = ctx.createBufferSource();
-      noise.buffer = buffer;
-
-      const filter = ctx.createBiquadFilter();
-      filter.type = 'highpass';
-      filter.frequency.setValueAtTime(1000, ctx.currentTime);
-
-      const gain = ctx.createGain();
-      gain.gain.setValueAtTime(0.5, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + duration);
-
-      noise.connect(filter);
-      filter.connect(gain);
-      gain.connect(ctx.destination);
-
-      noise.start();
-    } catch (e) {
-      console.error(e);
-    }
-  };
-
-  // 1. 종이 버리기 (작성 중인 글)
+  // 1. 종이 버리기
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -278,14 +184,14 @@ export default function TypewriterApp() {
     }
 
     const sentiment = analyzeSentiment(text);
-    const payload = {
-      content: text,
-      sentiment: sentiment,
-      is_picked: false,
-      user_id: userId,
-    };
-
-    const { error } = await supabase.from('papers').insert([payload]);
+    const { error } = await supabase.from('papers').insert([
+      {
+        content: text,
+        sentiment: sentiment,
+        is_picked: false,
+        user_id: userId,
+      },
+    ]);
 
     if (error) {
       alert('버리기에 실패했습니다.');
@@ -296,9 +202,8 @@ export default function TypewriterApp() {
     }
   };
 
-  // 2. 타인의 종이 주우기
+  // 2. 마음 줍기
   const handlePickUp = async (paperId: number) => {
-    playTrashSound();
     const { error } = await supabase
       .from('papers')
       .update({
@@ -309,7 +214,7 @@ export default function TypewriterApp() {
 
     if (error) {
       alert('주우는데 실패했습니다.');
-      console.error('수거 오류:', error);
+      console.error(error);
     } else {
       setSelectedPaper(null);
       setIsDiscardedPreviewOpen(false);
@@ -317,9 +222,8 @@ export default function TypewriterApp() {
     }
   };
 
-  // 3. 완전히 삭제하기 (쓰레기통 드래그 앤 드롭 완료 시)
+  // 3. 쓰레기통 드래그 앤 드롭으로 완전히 삭제
   const handleDeletePaper = async (paperId: number) => {
-    playTrashSound();
     const { error } = await supabase
       .from('papers')
       .delete()
@@ -333,7 +237,7 @@ export default function TypewriterApp() {
     }
   };
 
-  // 드래그 관련 이벤트
+  // 드래그 이벤트를 window 기준으로 추적
   const handleMouseDownPaper = (e: React.MouseEvent, paper: DiscardedPaper) => {
     e.stopPropagation();
     setDraggingPaper(paper);
@@ -347,10 +251,10 @@ export default function TypewriterApp() {
     if (trashBinRef.current) {
       const rect = trashBinRef.current.getBoundingClientRect();
       const isInside =
-        e.clientX >= rect.left - 10 &&
-        e.clientX <= rect.right + 10 &&
-        e.clientY >= rect.top - 10 &&
-        e.clientY <= rect.bottom + 10;
+        e.clientX >= rect.left - 15 &&
+        e.clientX <= rect.right + 15 &&
+        e.clientY >= rect.top - 15 &&
+        e.clientY <= rect.bottom + 15;
       setIsBinHovered(isInside);
     }
   };
@@ -369,12 +273,12 @@ export default function TypewriterApp() {
     return <main style={{ backgroundColor: '#121212', height: '100vh', width: '100vw' }} />;
   }
 
-  // 타자기 바닥에는 내가 작성해서 버린 글 + 내가 주운 글만 표출
+  // 타자기 바닥: 내 종이 + 주운 종이만
   const myFloorPapers = allPapers.filter(
     (p) => p.user_id === userId || (p.is_picked && p.picked_by === userId)
   );
 
-  // 모아보기 페이지용 데이터
+  // 모아보기 목록
   const othersPapers = allPapers.filter((p) => p.user_id !== userId && !p.is_picked);
   const myCollectedPapers = allPapers.filter((p) => p.user_id === userId || p.picked_by === userId);
 
@@ -389,7 +293,6 @@ export default function TypewriterApp() {
         backgroundColor: '#121212',
         overflow: 'hidden',
         userSelect: 'none',
-        boxSizing: 'border-box',
       }}
     >
       <style>{`
@@ -397,16 +300,6 @@ export default function TypewriterApp() {
           width: 90%;
           max-width: 850px;
           aspect-ratio: 4 / 3.3;
-        }
-        .typewriter-textarea {
-          font-family: var(--font-mona), monospace;
-          font-size: 14px;
-        }
-        @media (max-width: 500px) {
-          .typewriter-wrapper {
-            width: 130vw !important;
-            max-width: none !important;
-          }
         }
       `}</style>
 
@@ -419,7 +312,7 @@ export default function TypewriterApp() {
           transform: currentPage === 'typewriter' ? 'translateX(0)' : 'translateX(-100vw)',
         }}
       >
-        {/* 1. 타자기 화면 */}
+        {/* 1. 메인 타자기 화면 */}
         <section
           style={{
             width: '100vw',
@@ -429,10 +322,9 @@ export default function TypewriterApp() {
             justifyContent: 'center',
             alignItems: 'center',
             position: 'relative',
-            overflow: 'hidden',
           }}
         >
-          {/* 상단 우측: 날것의 bin.png 쓰레기통 이미지 & 모아보기 버튼 */}
+          {/* 상단 컨트롤 영역: ✏️ 연필 버튼, 날것의 쓰레기통 이미지, 모아보기 버튼 */}
           <div
             style={{
               position: 'absolute',
@@ -440,24 +332,47 @@ export default function TypewriterApp() {
               top: '25px',
               display: 'flex',
               alignItems: 'center',
-              gap: '16px',
+              gap: '14px',
               zIndex: 100,
             }}
           >
+            {/* ✏️ 로그인 정보/연필 버튼 */}
+            <button
+              onClick={() => setShowProfileModal(true)}
+              style={{
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                border: '1px solid rgba(255, 255, 255, 0.25)',
+                borderRadius: '50%',
+                width: '42px',
+                height: '42px',
+                fontSize: '18px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fff',
+                backdropFilter: 'blur(4px)',
+              }}
+              title="내 로그인 정보"
+            >
+              ✏️
+            </button>
+
+            {/* 날것의 bin.png 쓰레기통 */}
             <img
               ref={trashBinRef}
               src="/bin.png"
               alt="Trash Bin"
               style={{
-                width: '48px',
-                height: '48px',
+                width: '46px',
+                height: '46px',
                 objectFit: 'contain',
                 cursor: 'pointer',
                 transition: 'transform 0.2s ease, filter 0.2s ease',
                 transform: isBinHovered ? 'scale(1.25)' : 'scale(1)',
                 filter: isBinHovered ? 'drop-shadow(0 0 8px rgba(217, 83, 79, 0.8))' : 'none',
               }}
-              title="쓰레기를 여기로 끌어다 놓으면 완전 삭제됩니다"
+              title="드래그해서 여기 놓으면 완전히 삭제됩니다"
             />
 
             <button
@@ -477,7 +392,7 @@ export default function TypewriterApp() {
             </button>
           </div>
 
-          {/* 내 타자기 바닥에 뿌려진 쓰레기들 (내가 작성한 것 + 내가 주운 것) */}
+          {/* 타자기 바닥 쓰레기들 (내 글 + 주운 글) */}
           {myFloorPapers.map((paper) => {
             const isDragging = draggingPaper?.id === paper.id;
             return (
@@ -500,7 +415,6 @@ export default function TypewriterApp() {
                     : `rotate(${paper.rotate}deg) scale(${paper.scale})`,
                   zIndex: isDragging ? 200 : 30,
                   cursor: isDragging ? 'grabbing' : 'grab',
-                  transition: isDragging ? 'none' : 'transform 0.2s ease',
                   opacity: isDragging ? 0.85 : 1,
                 }}
               >
@@ -531,18 +445,16 @@ export default function TypewriterApp() {
               }}
             >
               {paperDateStr && (
-                <div style={{ fontSize: '10px', color: '#555', textAlign: 'center', marginBottom: '4px', letterSpacing: '1px' }}>
+                <div style={{ fontSize: '10px', color: '#555', textAlign: 'center', marginBottom: '4px' }}>
                   {paperDateStr}
                 </div>
               )}
 
               <textarea
-                ref={textareaRef}
                 value={text}
                 onChange={(e) => setText(e.target.value)}
                 placeholder="타자기를 치듯 글을 작성해보세요..."
                 autoFocus
-                className="typewriter-textarea"
                 style={{
                   width: '100%',
                   height: '100%',
@@ -552,7 +464,7 @@ export default function TypewriterApp() {
                   resize: 'none',
                   lineHeight: '1.4',
                   color: '#1a1a1a',
-                  textAlign: 'left',
+                  fontSize: '14px',
                   padding: 0,
                   margin: 0,
                   overflowY: 'auto',
@@ -579,7 +491,7 @@ export default function TypewriterApp() {
             />
           </div>
 
-          {/* 하단 버튼 영역 */}
+          {/* 하단 버튼들 */}
           <div
             style={{
               position: 'absolute',
@@ -658,7 +570,7 @@ export default function TypewriterApp() {
           </button>
 
           <header style={{ textAlign: 'center', marginTop: '30px', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '22px', letterSpacing: '2px', color: '#f0f0f0', margin: 0 }}>📜 버려진 종이 조각들</h2>
+            <h2 style={{ fontSize: '22px', color: '#f0f0f0', margin: 0 }}>📜 버려진 종이 조각들</h2>
 
             <div style={{ display: 'inline-flex', gap: '8px', marginTop: '16px', backgroundColor: '#262626', padding: '4px', borderRadius: '20px' }}>
               <button
@@ -692,94 +604,109 @@ export default function TypewriterApp() {
               paddingBottom: '60px',
             }}
           >
-            {(trashTab === 'others' ? othersPapers : myCollectedPapers).length === 0 ? (
-              <div style={{ gridColumn: '1 / -1', textAlign: 'center', color: '#666', padding: '60px 0' }}>
-                {trashTab === 'others' ? '타인의 버려진 종이가 없습니다.' : '내가 버리거나 주운 종이가 없습니다.'}
-              </div>
-            ) : (
-              (trashTab === 'others' ? othersPapers : myCollectedPapers).map((paper, index) => {
-                const isMine = paper.user_id === userId;
-                const isPickedByMe = paper.picked_by === userId;
+            {(trashTab === 'others' ? othersPapers : myCollectedPapers).map((paper, index) => {
+              const isMine = paper.user_id === userId;
+              const isPickedByMe = paper.picked_by === userId;
 
-                return (
-                  <div
-                    key={paper.id}
-                    onClick={() => {
-                      setSelectedPaper(paper);
-                      setIsDiscardedPreviewOpen(true);
-                    }}
+              return (
+                <div
+                  key={paper.id}
+                  onClick={() => {
+                    setSelectedPaper(paper);
+                    setIsDiscardedPreviewOpen(true);
+                  }}
+                  style={{
+                    backgroundColor: '#262626',
+                    border: `1px solid ${isMine ? '#d9534f' : isPickedByMe ? '#4a90e2' : '#3d3d3d'}`,
+                    borderRadius: '8px',
+                    padding: '16px',
+                    height: '180px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    cursor: 'pointer',
+                    transform: `rotate(${index % 2 === 0 ? '-1deg' : '1deg'})`,
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    position: 'relative',
+                  }}
+                >
+                  <p
                     style={{
-                      backgroundColor: '#262626',
-                      border: `1px solid ${isMine ? '#d9534f' : isPickedByMe ? '#4a90e2' : '#3d3d3d'}`,
-                      borderRadius: '8px',
-                      padding: '16px',
-                      height: '180px',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      justifyContent: 'space-between',
-                      cursor: 'pointer',
-                      transform: `rotate(${index % 2 === 0 ? '-1deg' : '1deg'})`,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
-                      position: 'relative',
+                      fontSize: '13px',
+                      color: '#ddd',
+                      margin: 0,
+                      lineHeight: '1.5',
+                      overflow: 'hidden',
+                      display: '-webkit-box',
+                      WebkitLineClamp: 5,
+                      WebkitBoxOrient: 'vertical',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
                     }}
                   >
-                    {isMine && (
-                      <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', backgroundColor: '#d9534f', color: '#fff', padding: '2px 6px', borderRadius: '4px' }}>
-                        내 글
-                      </span>
-                    )}
-                    {isPickedByMe && !isMine && (
-                      <span style={{ position: 'absolute', top: '10px', right: '10px', fontSize: '10px', backgroundColor: '#4a90e2', color: '#fff', padding: '2px 6px', borderRadius: '4px' }}>
-                        주운 마음
-                      </span>
-                    )}
+                    {paper.text}
+                  </p>
 
-                    <p
-                      style={{
-                        fontSize: '13px',
-                        color: '#ddd',
-                        margin: 0,
-                        lineHeight: '1.5',
-                        overflow: 'hidden',
-                        display: '-webkit-box',
-                        WebkitLineClamp: 5,
-                        WebkitBoxOrient: 'vertical',
-                        whiteSpace: 'pre-wrap',
-                        wordBreak: 'break-word',
-                      }}
-                    >
-                      {paper.text}
-                    </p>
-
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #383838' }}>
-                      <span style={{ fontSize: '11px', color: '#666' }}>
-                        {paper.created_at ? new Date(paper.created_at).toLocaleDateString('ko-KR') : ''}
-                      </span>
-                      {!isMine && !isPickedByMe && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handlePickUp(paper.id);
-                          }}
-                          style={{ backgroundColor: 'transparent', color: '#d9534f', border: 'none', fontSize: '11px', cursor: 'pointer' }}
-                        >
-                          마음 줍기
-                        </button>
-                      )}
-                    </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #383838' }}>
+                    <span style={{ fontSize: '11px', color: '#666' }}>
+                      {paper.created_at ? new Date(paper.created_at).toLocaleDateString('ko-KR') : ''}
+                    </span>
+                    {!isMine && !isPickedByMe && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePickUp(paper.id);
+                        }}
+                        style={{ backgroundColor: 'transparent', color: '#d9534f', border: 'none', fontSize: '11px', cursor: 'pointer' }}
+                      >
+                        마음 줍기
+                      </button>
+                    )}
                   </div>
-                );
-              })
-            )}
+                </div>
+              );
+            })}
           </main>
         </section>
       </div>
 
+      {/* ✏️ 연필 버튼 클릭 시 내 정보 팝업 모달 */}
+      {showProfileModal && (
+        <div onClick={() => setShowProfileModal(false)} style={modalBgStyle}>
+          <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px' }}>✏️ 내 로그인 정보</h3>
+            <div style={{ backgroundColor: '#1e1e1e', padding: '16px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
+              <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#888' }}>현재 접속중인 계정 번호</p>
+              <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#4a90e2', letterSpacing: '1px' }}>
+                {userId}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowProfileModal(false)}
+              style={{ width: '100%', padding: '10px', backgroundColor: '#444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+            >
+              확인
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 카카오 커피 지원 모달 */}
+      {isKakaoModalOpen && (
+        <div onClick={() => setIsKakaoModalOpen(false)} style={modalBgStyle}>
+          <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
+            <h3 style={{ margin: '0 0 12px 0' }}>☕ 개발자에게 커피 사주기</h3>
+            <img src="/kakao_image.png" alt="카카오" style={{ width: '100%', borderRadius: '8px', marginBottom: '12px' }} />
+            <button onClick={() => setIsKakaoModalOpen(false)} style={{ width: '100%', padding: '8px', backgroundColor: '#444', color: '#fff', border: 'none', borderRadius: '6px' }}>닫기</button>
+          </div>
+        </div>
+      )}
+
       {/* 미리보기 모달 */}
       {isPreviewOpen && (
-        <div onClick={() => setIsPreviewOpen(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 250, padding: '20px' }}>
+        <div onClick={() => setIsPreviewOpen(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%' }}>
-            <div style={{ backgroundColor: FRAME_STYLES[currentFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[currentFrameIndex].textColor, borderRadius: '8px', minHeight: '400px' }}>
+            <div style={{ backgroundColor: FRAME_STYLES[currentFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[currentFrameIndex].textColor, borderRadius: '8px', minHeight: '350px' }}>
               <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{text}</p>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
@@ -790,11 +717,11 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* 버린 종이 상세 모달 */}
+      {/* 버린 종이 보기 모달 */}
       {isDiscardedPreviewOpen && selectedPaper && (
-        <div onClick={() => setIsDiscardedPreviewOpen(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.85)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 250, padding: '20px' }}>
+        <div onClick={() => setIsDiscardedPreviewOpen(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%' }}>
-            <div style={{ backgroundColor: FRAME_STYLES[discardedFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[discardedFrameIndex].textColor, borderRadius: '8px', minHeight: '400px' }}>
+            <div style={{ backgroundColor: FRAME_STYLES[discardedFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[discardedFrameIndex].textColor, borderRadius: '8px', minHeight: '350px' }}>
               <p style={{ whiteSpace: 'pre-wrap', margin: 0 }}>{selectedPaper.text}</p>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
@@ -806,17 +733,27 @@ export default function TypewriterApp() {
           </div>
         </div>
       )}
-
-      {/* 커피 후원 모달 */}
-      {isKakaoModalOpen && (
-        <div onClick={() => setIsKakaoModalOpen(false)} style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', backgroundColor: 'rgba(0,0,0,0.8)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 300 }}>
-          <div onClick={(e) => e.stopPropagation()} style={{ backgroundColor: '#222', padding: '24px', borderRadius: '16px', textAlign: 'center', color: '#fff', maxWidth: '320px', border: '1px solid #444' }}>
-            <h3 style={{ margin: '0 0 12px 0' }}>☕ 개발자에게 커피 사주기</h3>
-            <img src="/kakao_image.png" alt="카카오 송금" style={{ width: '100%', borderRadius: '8px', marginBottom: '12px' }} />
-            <button onClick={() => setIsKakaoModalOpen(false)} style={{ width: '100%', padding: '8px', backgroundColor: '#444', color: '#fff', border: 'none', borderRadius: '6px' }}>닫기</button>
-          </div>
-        </div>
-      )}
     </main>
   );
 }
+
+const modalBgStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0, left: 0,
+  width: '100vw', height: '100vh',
+  backgroundColor: 'rgba(0,0,0,0.85)',
+  display: 'flex', justifyContent: 'center', alignItems: 'center',
+  zIndex: 300,
+  padding: '20px',
+};
+
+const modalCardStyle: React.CSSProperties = {
+  backgroundColor: '#262626',
+  padding: '24px',
+  borderRadius: '12px',
+  width: '100%',
+  maxWidth: '320px',
+  textAlign: 'center',
+  border: '1px solid #444',
+  color: '#fff',
+};
