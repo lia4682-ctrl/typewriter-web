@@ -155,7 +155,6 @@ export default function TypewriterApp() {
 
   useEffect(() => {
     setMounted(true);
-
     const storedUserId = localStorage.getItem('typewriter_user_id');
     if (!storedUserId) {
       setShowLoginModal(true);
@@ -428,13 +427,14 @@ export default function TypewriterApp() {
     }
   };
 
+  // 드래그 시작
   const handleMouseDownPaper = (e: React.MouseEvent, paper: DiscardedPaper) => {
     e.stopPropagation();
     const target = e.currentTarget as HTMLElement;
     const rect = target.getBoundingClientRect();
 
     setDraggingPaper(paper);
-    setIsDraggingActive(false);
+    setIsDraggingActive(true); // 곧바로 드래그 활성화
     setDragPos({ x: e.clientX, y: e.clientY });
     setDragOffset({
       x: e.clientX - rect.left,
@@ -442,34 +442,29 @@ export default function TypewriterApp() {
     });
   };
 
+  // 마우스 이동
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!draggingPaper) return;
-
-    if (!isDraggingActive) {
-      const dist = Math.hypot(e.clientX - dragPos.x, e.clientY - dragPos.y);
-      if (dist > 3) {
-        setIsDraggingActive(true);
-      }
-    }
 
     setDragPos({ x: e.clientX, y: e.clientY });
 
     if (trashBinRef.current) {
       const rect = trashBinRef.current.getBoundingClientRect();
       const isInside =
-        e.clientX >= rect.left - 40 &&
-        e.clientX <= rect.right + 40 &&
-        e.clientY >= rect.top - 40 &&
-        e.clientY <= rect.bottom + 40;
+        e.clientX >= rect.left - 50 &&
+        e.clientX <= rect.right + 50 &&
+        e.clientY >= rect.top - 50 &&
+        e.clientY <= rect.bottom + 50;
       setIsBinHovered(isInside);
     }
   };
 
+  // 마우스 뗄 때
   const handleMouseUp = async () => {
     if (draggingPaper) {
       if (isBinHovered) {
         await handleDeletePaper(draggingPaper.id);
-      } else if (isDraggingActive) {
+      } else {
         const newPixelX = dragPos.x - dragOffset.x;
         const newPixelY = dragPos.y - dragOffset.y;
         const newX = Math.max(0, Math.min(92, (newPixelX / window.innerWidth) * 100));
@@ -552,9 +547,9 @@ export default function TypewriterApp() {
             margin-bottom: 90px;
           }
           .typewriter-input-wrapper {
-            top: 25%; /* 모바일에서 종이 위치에 맞게 아래로 내림 */
-            left: 27%; /* 모바일 화면 비율에 맞춰 왼쪽 조정 */
-            width: 46%; /* 모바일 종이 폭에 맞춤 */
+            top: 25%;
+            left: 27%;
+            width: 46%;
             height: 14%;
           }
         }
@@ -645,7 +640,7 @@ export default function TypewriterApp() {
               cursor: 'pointer',
               zIndex: 100,
               transition: 'transform 0.2s ease, filter 0.2s ease',
-              transform: isBinHovered ? 'scale(1.1)' : 'scale(1)',
+              transform: isBinHovered ? 'scale(1.2)' : 'scale(1)',
               filter: isBinHovered
                 ? 'drop-shadow(0 0 24px rgba(255, 255, 255, 0.95)) brightness(1.2)'
                 : 'drop-shadow(0 4px 10px rgba(0,0,0,0.7))',
@@ -675,13 +670,13 @@ export default function TypewriterApp() {
           </button>
 
           {myFloorPapers.map((paper) => {
-            const isDragging = draggingPaper?.id === paper.id && isDraggingActive;
+            const isDragging = draggingPaper?.id === paper.id;
             return (
               <div
                 key={paper.id}
                 onMouseDown={(e) => handleMouseDownPaper(e, paper)}
                 onClick={() => {
-                  if (!isDraggingActive) {
+                  if (!isDragging) {
                     setSelectedPaper(paper);
                     setIsDiscardedPreviewOpen(true);
                   }
