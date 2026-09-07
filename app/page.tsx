@@ -74,6 +74,43 @@ const FRAME_STYLES = [
     border: '1px solid rgba(220, 150, 140, 0.2)',
     boxShadow: '0 20px 40px rgba(15, 10, 12, 0.8), inset 0 0 60px rgba(60, 30, 30, 0.3)',
   },
+  // --- 신규 추가된 프레임 ---
+  {
+    id: 'modern-cinema',
+    name: '모던 시네마',
+    bgColor: '#080808',
+    textColor: '#f5f5f7',
+    font: 'sans-serif',
+    border: '1px solid rgba(255,255,255,0.15)',
+    boxShadow: '0 25px 50px rgba(0,0,0,0.9)',
+  },
+  {
+    id: 'diary-note',
+    name: '다이어리 노트',
+    bgColor: '#fffff8',
+    textColor: '#333333',
+    font: 'sans-serif',
+    border: '2px solid #e2ded0',
+    boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
+  },
+  {
+    id: 'film-noir',
+    name: '필름 누아르',
+    bgColor: '#121212',
+    textColor: '#cccccc',
+    font: 'monospace',
+    border: '2px double #444444',
+    boxShadow: '0 15px 35px rgba(0,0,0,0.8)',
+  },
+  {
+    id: 'vintage-postcard',
+    name: '빈티지 엽서',
+    bgColor: '#f0ece1',
+    textColor: '#524534',
+    font: 'serif',
+    border: '6px solid #e4dccc',
+    boxShadow: '0 10px 25px rgba(82,69,52,0.12)',
+  },
 ];
 
 const POSITIVE_WORDS = ['좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나', '희망'];
@@ -115,6 +152,8 @@ export default function TypewriterApp() {
   const [isBinHovered, setIsBinHovered] = useState(false);
 
   const trashBinRef = useRef<HTMLImageElement | null>(null);
+  const previewCardRef = useRef<HTMLDivElement | null>(null);
+  const discardedPreviewCardRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     setMounted(true);
@@ -357,7 +396,6 @@ export default function TypewriterApp() {
   const handleDeletePaper = async (paperId: number) => {
     const targetId = Number(paperId);
     
-    // 1. 화면 상태에서 즉시 제거 및 모달 닫기 (유령 방지)
     setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
     setDraggingPaper(null);
     setIsDraggingActive(false);
@@ -365,7 +403,6 @@ export default function TypewriterApp() {
     setSelectedPaper(null);
     setIsDiscardedPreviewOpen(false);
 
-    // 2. Supabase 서버에서 데이터 완전히 삭제 요청
     const { error } = await supabase
       .from('papers')
       .delete()
@@ -373,7 +410,7 @@ export default function TypewriterApp() {
 
     if (error) {
       alert('삭제에 실패했습니다: ' + error.message);
-      fetchPapers(); // 실패 시에만 원복
+      fetchPapers();
     }
   };
 
@@ -382,6 +419,28 @@ export default function TypewriterApp() {
     navigator.clipboard.writeText(shareUrl).then(() => {
       alert('클립보드에 공유 링크가 복사되었습니다! 🔗');
     });
+  };
+
+  // 프레임 이미지로 저장하는 함수 (html2canvas 라이브러리 활용 혹은 순수 DOM 대책)
+  const handleSaveFrameAsImage = async (cardRef: React.RefObject<HTMLDivElement | null>, frameName: string) => {
+    if (!cardRef.current) return;
+    try {
+      // html2canvas 동적 로드
+      const html2canvas = (await import('html2canvas')).default;
+      const canvas = await html2canvas(cardRef.current, {
+        scale: 2,
+        backgroundColor: null,
+        useCORS: true,
+      });
+      const image = canvas.toDataURL('image/png');
+      const a = document.createElement('a');
+      a.href = image;
+      a.download = `typewriter_${frameName}_${Date.now()}.png`;
+      a.click();
+    } catch (err) {
+      console.error('이미지 저장 실패:', err);
+      alert('이미지 저장 중 오류가 발생했습니다.');
+    }
   };
 
   const handleMouseDownPaper = (e: React.MouseEvent, paper: DiscardedPaper) => {
@@ -461,6 +520,13 @@ export default function TypewriterApp() {
         height: '100vh',
         width: '100vw',
         backgroundColor: '#121212',
+        // 배경 다각화: 은은한 방사형 그라데이션과 미세한 그리드 패턴 추가
+        backgroundImage: `
+          radial-gradient(circle at 50% 50%, #1a1f2c 0%, #101216 100%),
+          linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px)
+        `,
+        backgroundSize: '100% 100%, 40px 40px, 40px 40px',
         overflow: 'hidden',
         userSelect: 'none',
       }}
@@ -918,9 +984,11 @@ export default function TypewriterApp() {
 
       {isPreviewOpen && (
         <div onClick={() => setIsPreviewOpen(false)} style={modalBgStyle}>
-          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%', padding: '0 20px' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%', padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div 
+              ref={previewCardRef}
               style={{ 
+                width: '100%',
                 backgroundColor: FRAME_STYLES[currentFrameIndex].bgColor, 
                 color: FRAME_STYLES[currentFrameIndex].textColor, 
                 fontFamily: FRAME_STYLES[currentFrameIndex].font,
@@ -933,6 +1001,7 @@ export default function TypewriterApp() {
                 flexDirection: 'column',
                 justifyContent: 'center',
                 position: 'relative',
+                boxSizing: 'border-box',
                 transition: 'all 0.4s ease',
               }}
             >
@@ -946,9 +1015,10 @@ export default function TypewriterApp() {
                 TYPEWRITER ARCHIVE
               </span>
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%' }}>
               <button onClick={() => setCurrentFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🎲 무드 변경</button>
-              <button onClick={() => setIsPreviewOpen(false)} style={{ flex: 1, padding: '12px', backgroundColor: '#fff', color: '#111', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>완료</button>
+              <button onClick={() => handleSaveFrameAsImage(previewCardRef, FRAME_STYLES[currentFrameIndex].id)} style={{ flex: 1, padding: '12px', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>💾 저장</button>
+              <button onClick={() => setIsPreviewOpen(false)} style={{ flex: 1, padding: '12px', backgroundColor: '#fff', color: '#111', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>닫기</button>
             </div>
           </div>
         </div>
@@ -956,9 +1026,11 @@ export default function TypewriterApp() {
 
       {isDiscardedPreviewOpen && selectedPaper && (
         <div onClick={() => setIsDiscardedPreviewOpen(false)} style={modalBgStyle}>
-          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%', padding: '0 20px' }}>
+          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%', padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             <div 
+              ref={discardedPreviewCardRef}
               style={{ 
+                width: '100%',
                 backgroundColor: FRAME_STYLES[discardedFrameIndex].bgColor, 
                 color: FRAME_STYLES[discardedFrameIndex].textColor, 
                 fontFamily: FRAME_STYLES[discardedFrameIndex].font,
@@ -971,6 +1043,7 @@ export default function TypewriterApp() {
                 flexDirection: 'column',
                 justifyContent: 'center',
                 position: 'relative',
+                boxSizing: 'border-box',
                 transition: 'all 0.4s ease',
               }}
             >
@@ -984,9 +1057,10 @@ export default function TypewriterApp() {
                 TYPEWRITER ARCHIVE
               </span>
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%', flexWrap: 'wrap' }}>
               <button onClick={() => setDiscardedFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🎲 무드 변경</button>
-              <button onClick={() => handleCopyShareLink(selectedPaper.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#2a52be', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🔗 공유 링크</button>
+              <button onClick={() => handleSaveFrameAsImage(discardedPreviewCardRef, FRAME_STYLES[discardedFrameIndex].id)} style={{ flex: 1, padding: '12px', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>💾 저장</button>
+              <button onClick={() => handleCopyShareLink(selectedPaper.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#2a52be', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🔗 공유</button>
               {selectedPaper.user_id !== userId && selectedPaper.picked_by !== userId && (
                 <button onClick={() => handlePickUp(selectedPaper.id)} style={{ flex: 1.2, padding: '12px', backgroundColor: '#d9534f', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🧹 줍기</button>
               )}
