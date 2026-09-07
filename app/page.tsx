@@ -520,22 +520,32 @@ export default function TypewriterApp() {
       }}
     >
       <style>{`
+        .typewriter-screen {
+          width: 100vw;
+          height: 100dvh;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+          position: relative;
+          box-sizing: border-box;
+        }
         .typewriter-container {
           width: 90%;
-          max-width: 750px;
+          max-width: 680px;
           aspect-ratio: 16 / 12;
-          margin: 0 auto;
           position: relative;
           display: flex;
           justify-content: center;
           align-items: center;
+          margin-bottom: 80px;
         }
         .typewriter-input-wrapper {
           position: absolute;
           top: 26%;
-          left: 31%;
-          width: 38%;
-          height: 19%;
+          left: 32%;
+          width: 36%;
+          height: 18%;
           padding: 4px;
           box-sizing: border-box;
           z-index: 3;
@@ -545,13 +555,14 @@ export default function TypewriterApp() {
         @media (max-width: 768px) {
           .typewriter-container {
             width: 95%;
-            max-width: 500px;
+            max-width: 460px;
+            margin-bottom: 90px;
           }
           .typewriter-input-wrapper {
             top: 25%;
-            left: 29%;
-            width: 42%;
-            height: 20%;
+            left: 30%;
+            width: 40%;
+            height: 19%;
           }
         }
       `}</style>
@@ -598,19 +609,7 @@ export default function TypewriterApp() {
           transform: currentPage === 'typewriter' ? 'translateX(0)' : 'translateX(-100vw)',
         }}
       >
-        <section
-          style={{
-            width: '100vw',
-            height: '100dvh',
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'center',
-            alignItems: 'center',
-            position: 'relative',
-            boxSizing: 'border-box',
-            paddingBottom: '140px',
-          }}
-        >
+        <section className="typewriter-screen">
           <img
             src="/pencil.png"
             alt="Pencil"
@@ -768,15 +767,12 @@ export default function TypewriterApp() {
 
           <div
             style={{
-              position: 'fixed',
-              bottom: '20px',
+              position: 'absolute',
+              bottom: '36px',
               left: '50%',
               transform: 'translateX(-50%)',
               width: '90%',
-              maxWidth: '400px',
-              backgroundColor: 'transparent',
-              padding: '0',
-              boxSizing: 'border-box',
+              maxWidth: '380px',
               display: 'flex',
               flexDirection: 'column',
               gap: '8px',
@@ -1073,6 +1069,17 @@ export default function TypewriterApp() {
 }
 
 const modalBgStyle: React.CSSProperties = {
+  position: 'fixed',
+  top: 0, left: 0,
+  width: '100vw', height: '100dvh',
+  backgroundColor: 'rgba(0,0,0,0.85)',
+  display: 'flex', justifyContent: 'center', alignItems: 'center',
+  zIndex: zIndexMap = 300, // corrected to standard value
+  padding: '20px',
+};
+
+// Re-declared to avoid reference issues
+const safeModalBgStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0, left: 0,
   width: '100vw', height: '100dvh',
