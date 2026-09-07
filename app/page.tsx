@@ -20,12 +20,60 @@ interface DiscardedPaper {
 }
 
 const FRAME_STYLES = [
-  { id: 'monologue-3am', name: 'Monologue at 3 AM', bgColor: '#121318', textColor: '#e2e4ed', font: 'serif' },
-  { id: 'poetic-parchment', name: 'Poetic Parchment', bgColor: '#f7f4ed', textColor: '#2c2825', font: 'serif' },
-  { id: 'faded-blueprint', name: 'Faded Blueprint', bgColor: '#1a2634', textColor: '#b2c9e0', font: 'sans-serif' },
-  { id: 'midnight-cafe', name: 'Midnight Cafe', bgColor: '#221c1a', textColor: '#e8dccd', font: 'serif' },
-  { id: 'foggy-morning', name: 'Foggy Morning', bgColor: '#e6ebed', textColor: '#33414a', font: 'sans-serif' },
-  { id: 'retro-journal', name: 'Retro Journal', bgColor: '#2b261f', textColor: '#d4bda8', font: 'serif' },
+  {
+    id: 'midnight-monologue',
+    name: '새벽의 독백',
+    bgColor: '#0e1116',
+    textColor: '#e8eaed',
+    font: 'serif',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8), inset 0 0 80px rgba(0, 0, 0, 0.5)',
+  },
+  {
+    id: 'vintage-film',
+    name: '빛바랜 필름',
+    bgColor: '#f4efe6',
+    textColor: '#2b2621',
+    font: 'serif',
+    border: '8px solid #f9f6f0',
+    boxShadow: '0 10px 30px rgba(43, 38, 33, 0.15), inset 0 0 40px rgba(0,0,0,0.03)',
+  },
+  {
+    id: 'deep-forest',
+    name: '고요한 숲',
+    bgColor: '#161c18',
+    textColor: '#d4ded7',
+    font: 'serif',
+    border: '1px solid rgba(160, 180, 165, 0.15)',
+    boxShadow: '0 20px 40px rgba(10, 15, 12, 0.7), inset 0 0 60px rgba(30, 45, 35, 0.3)',
+  },
+  {
+    id: 'warm-paper',
+    name: '기억의 방',
+    bgColor: '#faf8f5',
+    textColor: '#4a4238',
+    font: 'sans-serif',
+    border: '1px dashed #d1c7bd',
+    boxShadow: '0 12px 35px rgba(0, 0, 0, 0.08)',
+  },
+  {
+    id: 'seaside-fog',
+    name: '흐린 바닷가',
+    bgColor: '#1a2129',
+    textColor: '#cbd5e1',
+    font: 'sans-serif',
+    border: '1px solid rgba(100, 120, 140, 0.2)',
+    boxShadow: '0 20px 40px rgba(10, 15, 20, 0.8), inset 0 0 50px rgba(30, 45, 60, 0.2)',
+  },
+  {
+    id: 'sunset-glow',
+    name: '스미는 노을',
+    bgColor: '#1f1618',
+    textColor: '#f3d9d5',
+    font: 'serif',
+    border: '1px solid rgba(220, 150, 140, 0.2)',
+    boxShadow: '0 20px 40px rgba(15, 10, 12, 0.8), inset 0 0 60px rgba(60, 30, 30, 0.3)',
+  },
 ];
 
 const POSITIVE_WORDS = ['좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나', '희망'];
@@ -61,7 +109,9 @@ export default function TypewriterApp() {
   const [discardedFrameIndex, setDiscardedFrameIndex] = useState(0);
 
   const [draggingPaper, setDraggingPaper] = useState<DiscardedPaper | null>(null);
+  const [isDraggingActive, setIsDraggingActive] = useState(false);
   const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+  const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isBinHovered, setIsBinHovered] = useState(false);
 
   const trashBinRef = useRef<HTMLImageElement | null>(null);
@@ -100,7 +150,7 @@ export default function TypewriterApp() {
     }
 
     try {
-      const { data: existingUser, error: searchError } = await supabase
+      const { data: existingUser } = await supabase
         .from('users')
         .select('*')
         .eq('username', inputUsername.trim())
@@ -309,6 +359,7 @@ export default function TypewriterApp() {
     
     setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
     setDraggingPaper(null);
+    setIsDraggingActive(false);
     setIsBinHovered(false);
 
     const { error } = await supabase
@@ -330,12 +381,28 @@ export default function TypewriterApp() {
 
   const handleMouseDownPaper = (e: React.MouseEvent, paper: DiscardedPaper) => {
     e.stopPropagation();
+    const target = e.currentTarget as HTMLElement;
+    const rect = target.getBoundingClientRect();
+
     setDraggingPaper(paper);
+    setIsDraggingActive(false);
     setDragPos({ x: e.clientX, y: e.clientY });
+    setDragOffset({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
   };
 
   const handleMouseMove = (e: React.MouseEvent) => {
     if (!draggingPaper) return;
+
+    if (!isDraggingActive) {
+      const dist = Math.hypot(e.clientX - dragPos.x, e.clientY - dragPos.y);
+      if (dist > 3) {
+        setIsDraggingActive(true);
+      }
+    }
+
     setDragPos({ x: e.clientX, y: e.clientY });
 
     if (trashBinRef.current) {
@@ -353,17 +420,19 @@ export default function TypewriterApp() {
     if (draggingPaper) {
       if (isBinHovered) {
         await handleDeletePaper(draggingPaper.id);
-      } else {
-        // 드래그를 끝냈을 때 화면 퍼센트 좌표로 위치를 업데이트하도록 수정
-        const newX = Math.max(0, Math.min(95, (dragPos.x / window.innerWidth) * 100));
-        const newY = Math.max(0, Math.min(90, (dragPos.y / window.innerHeight) * 100));
+      } else if (isDraggingActive) {
+        const newPixelX = dragPos.x - dragOffset.x;
+        const newPixelY = dragPos.y - dragOffset.y;
+        const newX = Math.max(0, Math.min(92, (newPixelX / window.innerWidth) * 100));
+        const newY = Math.max(0, Math.min(88, (newPixelY / window.innerHeight) * 100));
 
         setAllPapers((prev) =>
           prev.map((p) => (p.id === draggingPaper.id ? { ...p, x: newX, y: newY } : p))
         );
-        setDraggingPaper(null);
-        setIsBinHovered(false);
       }
+      setDraggingPaper(null);
+      setIsDraggingActive(false);
+      setIsBinHovered(false);
     }
   };
 
@@ -524,27 +593,27 @@ export default function TypewriterApp() {
           </button>
 
           {myFloorPapers.map((paper) => {
-            const isDragging = draggingPaper?.id === paper.id;
+            const isDragging = draggingPaper?.id === paper.id && isDraggingActive;
             return (
               <div
                 key={paper.id}
                 onMouseDown={(e) => handleMouseDownPaper(e, paper)}
                 onClick={() => {
-                  if (!isDragging) {
+                  if (!isDraggingActive) {
                     setSelectedPaper(paper);
                     setIsDiscardedPreviewOpen(true);
                   }
                 }}
                 style={{
                   position: 'absolute',
-                  left: isDragging ? `${dragPos.x - 40}px` : `${paper.x}%`,
-                  top: isDragging ? `${dragPos.y - 40}px` : `${paper.y}%`,
+                  left: isDragging ? `${dragPos.x - dragOffset.x}px` : `${paper.x}%`,
+                  top: isDragging ? `${dragPos.y - dragOffset.y}px` : `${paper.y}%`,
                   width: '80px',
                   transform: isDragging
-                    ? 'scale(1.2) rotate(0deg)'
+                    ? 'scale(1.15) rotate(0deg)'
                     : `rotate(${paper.rotate}deg) scale(${paper.scale})`,
                   zIndex: isDragging ? 200 : 30,
-                  cursor: isDragging ? 'grabbing' : 'grab',
+                  cursor: 'grab',
                   opacity: isDragging ? 0.85 : 1,
                   transition: isDragging ? 'none' : 'left 0.3s ease, top 0.3s ease',
                 }}
@@ -844,13 +913,37 @@ export default function TypewriterApp() {
 
       {isPreviewOpen && (
         <div onClick={() => setIsPreviewOpen(false)} style={modalBgStyle}>
-          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%' }}>
-            <div style={{ backgroundColor: FRAME_STYLES[currentFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[currentFrameIndex].textColor, borderRadius: '8px', minHeight: '350px', fontFamily: FRAME_STYLES[currentFrameIndex].font }}>
-              <p style={{ whiteSpace: 'pre-wrap', margin: 0, lineHeight: '1.6' }}>{text}</p>
+          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%', padding: '0 20px' }}>
+            <div 
+              style={{ 
+                backgroundColor: FRAME_STYLES[currentFrameIndex].bgColor, 
+                color: FRAME_STYLES[currentFrameIndex].textColor, 
+                fontFamily: FRAME_STYLES[currentFrameIndex].font,
+                border: FRAME_STYLES[currentFrameIndex].border,
+                boxShadow: FRAME_STYLES[currentFrameIndex].boxShadow,
+                padding: '45px 35px', 
+                borderRadius: '4px', 
+                minHeight: '380px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                position: 'relative',
+                transition: 'all 0.4s ease',
+              }}
+            >
+              <span style={{ position: 'absolute', top: '20px', left: '25px', fontSize: '10px', opacity: 0.4, letterSpacing: '2px' }}>
+                {FRAME_STYLES[currentFrameIndex].name}
+              </span>
+              <p style={{ whiteSpace: 'pre-wrap', margin: 0, lineHeight: '1.8', fontSize: '15px', fontWeight: 300 }}>
+                {text}
+              </p>
+              <span style={{ position: 'absolute', bottom: '20px', right: '25px', fontSize: '10px', opacity: 0.3 }}>
+                TYPEWRITER ARCHIVE
+              </span>
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <button onClick={() => setCurrentFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={{ flex: 1, padding: '10px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>🎲 Frame 변경</button>
-              <button onClick={() => setIsPreviewOpen(false)} style={{ flex: 1, padding: '10px', backgroundColor: '#fff', color: '#000', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>닫기</button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+              <button onClick={() => setCurrentFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🎲 무드 변경</button>
+              <button onClick={() => setIsPreviewOpen(false)} style={{ flex: 1, padding: '12px', backgroundColor: '#fff', color: '#111', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px', fontWeight: 'bold' }}>완료</button>
             </div>
           </div>
         </div>
@@ -858,15 +951,39 @@ export default function TypewriterApp() {
 
       {isDiscardedPreviewOpen && selectedPaper && (
         <div onClick={() => setIsDiscardedPreviewOpen(false)} style={modalBgStyle}>
-          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%' }}>
-            <div style={{ backgroundColor: FRAME_STYLES[discardedFrameIndex].bgColor, padding: '30px', color: FRAME_STYLES[discardedFrameIndex].textColor, borderRadius: '8px', minHeight: '350px', fontFamily: FRAME_STYLES[discardedFrameIndex].font }}>
-              <p style={{ whiteSpace: 'pre-wrap', margin: 0, lineHeight: '1.6' }}>{selectedPaper.text}</p>
+          <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%', padding: '0 20px' }}>
+            <div 
+              style={{ 
+                backgroundColor: FRAME_STYLES[discardedFrameIndex].bgColor, 
+                color: FRAME_STYLES[discardedFrameIndex].textColor, 
+                fontFamily: FRAME_STYLES[discardedFrameIndex].font,
+                border: FRAME_STYLES[discardedFrameIndex].border,
+                boxShadow: FRAME_STYLES[discardedFrameIndex].boxShadow,
+                padding: '45px 35px', 
+                borderRadius: '4px', 
+                minHeight: '380px',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'center',
+                position: 'relative',
+                transition: 'all 0.4s ease',
+              }}
+            >
+              <span style={{ position: 'absolute', top: '20px', left: '25px', fontSize: '10px', opacity: 0.4, letterSpacing: '2px' }}>
+                {FRAME_STYLES[discardedFrameIndex].name}
+              </span>
+              <p style={{ whiteSpace: 'pre-wrap', margin: 0, lineHeight: '1.8', fontSize: '15px', fontWeight: 300 }}>
+                {selectedPaper.text}
+              </p>
+              <span style={{ position: 'absolute', bottom: '20px', right: '25px', fontSize: '10px', opacity: 0.3 }}>
+                TYPEWRITER ARCHIVE
+              </span>
             </div>
-            <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
-              <button onClick={() => setDiscardedFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={{ flex: 1, padding: '10px', backgroundColor: '#333', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>🎲 Frame</button>
-              <button onClick={() => handleCopyShareLink(selectedPaper.id)} style={{ flex: 1, padding: '10px', backgroundColor: '#2a52be', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>🔗 공유 링크</button>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '16px' }}>
+              <button onClick={() => setDiscardedFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🎲 무드 변경</button>
+              <button onClick={() => handleCopyShareLink(selectedPaper.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#2a52be', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🔗 공유 링크</button>
               {selectedPaper.user_id !== userId && selectedPaper.picked_by !== userId && (
-                <button onClick={() => handlePickUp(selectedPaper.id)} style={{ flex: 1.2, padding: '10px', backgroundColor: '#d9534f', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}>🧹 줍기</button>
+                <button onClick={() => handlePickUp(selectedPaper.id)} style={{ flex: 1.2, padding: '12px', backgroundColor: '#d9534f', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🧹 줍기</button>
               )}
             </div>
           </div>
