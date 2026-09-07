@@ -521,19 +521,19 @@ export default function TypewriterApp() {
     >
       <style>{`
         .typewriter-container {
-          width: 90%;
-          max-width: 680px;
-          aspect-ratio: 4 / 3.3;
+          width: 95%;
+          max-width: 820px;
+          aspect-ratio: 16 / 11;
           margin: 0 auto;
           position: relative;
         }
         .typewriter-input-wrapper {
           position: absolute;
-          top: 18.5%;
-          left: 36.8%;
-          width: 26.4%;
-          height: 14%;
-          padding: 20px 2px 2px 2px;
+          top: 17%;
+          left: 33%;
+          width: 34%;
+          height: 18%;
+          padding: 15px 4px 4px 4px;
           box-sizing: border-box;
           z-index: 3;
           display: flex;
@@ -541,23 +541,23 @@ export default function TypewriterApp() {
         }
         @media (max-width: 768px) {
           .typewriter-container {
-            width: 95%;
-            max-width: 420px;
+            width: 98%;
+            max-width: 560px;
           }
         }
-        @media (max-width: 400px) {
+        @media (max-width: 480px) {
           .typewriter-container {
             width: 100%;
             max-width: 100%;
-            padding: 0 12px;
+            padding: 0 8px;
             box-sizing: border-box;
           }
           .typewriter-input-wrapper {
-            top: 17%;
-            left: 32%;
-            width: 36%;
-            height: 18%;
-            padding: 10px 1px 1px 1px;
+            top: 16%;
+            left: 30%;
+            width: 40%;
+            height: 20%;
+            padding: 8px 2px 2px 2px;
           }
         }
       `}</style>
@@ -614,7 +614,7 @@ export default function TypewriterApp() {
             alignItems: 'center',
             position: 'relative',
             boxSizing: 'border-box',
-            paddingBottom: '130px',
+            paddingBottom: '140px',
           }}
         >
           <img
@@ -726,7 +726,7 @@ export default function TypewriterApp() {
           <div className="typewriter-container">
             <div className="typewriter-input-wrapper">
               {paperDateStr && (
-                <div style={{ fontSize: '10px', color: '#555', textAlign: 'center', marginBottom: '4px' }}>
+                <div style={{ fontSize: '11px', color: '#555', textAlign: 'center', marginBottom: '4px' }}>
                   {paperDateStr}
                 </div>
               )}
@@ -745,7 +745,7 @@ export default function TypewriterApp() {
                   resize: 'none',
                   lineHeight: '1.4',
                   color: '#1a1a1a',
-                  fontSize: '14px',
+                  fontSize: '15px',
                   padding: 0,
                   margin: 0,
                   overflowY: 'auto',
@@ -775,11 +775,11 @@ export default function TypewriterApp() {
           <div
             style={{
               position: 'fixed',
-              bottom: '16px',
+              bottom: '20px',
               left: '50%',
               transform: 'translateX(-50%)',
-              width: 'calc(100% - 32px)',
-              maxWidth: '420px',
+              width: '90%',
+              maxWidth: '440px',
               backgroundColor: 'transparent',
               padding: '0',
               boxSizing: 'border-box',
