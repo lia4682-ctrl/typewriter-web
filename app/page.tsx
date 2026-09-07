@@ -149,18 +149,18 @@ export default function TypewriterApp() {
     if (error) {
       console.error('글 가져오기 오류:', error);
     } else if (data) {
-      // DB에 x_pos, y_pos, rotate가 없는 경우 프론트엔드에서 안전한 무작위 배치 값 부여
+      // 프론트엔드상에서 위치 및 -15도 ~ +15도 사이의 불규칙한 회전각 생성
       const formattedPapers: DiscardedPaper[] = data.map((item, index) => {
         const defaultX = (index % 3) * 110 + 40;
         const defaultY = Math.floor(index / 3) * 120 + 80;
-        const defaultRotate = (index % 2 === 0 ? 1 : -1) * ((index * 7) % 25);
+        const randomRotate = Math.floor(Math.random() * 30) - 15;
 
         return {
           id: item.id,
           text: item.content,
-          x: item.x_pos ?? defaultX,
-          y: item.y_pos ?? defaultY,
-          rotate: item.rotate ?? defaultRotate,
+          x: defaultX,
+          y: defaultY,
+          rotate: randomRotate,
           sentiment: (item.sentiment as SentimentType) || 'neutral',
         };
       });
