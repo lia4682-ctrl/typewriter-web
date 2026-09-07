@@ -29,20 +29,8 @@ const POSITIVE_WORDS = ['좋아', '좋은', '좋다', '기쁘', '행복', '감�
 const NEGATIVE_WORDS = ['싫어', '싫다', '짜증', '슬프', '힘들', '우울', '화나', '아프', '지쳐', '괴로', '포기'];
 
 const generateNonOverlappingPos = () => {
-  let x = 0;
-  let y = 0;
-  let isOverlap = true;
-
-  while (isOverlap) {
-    x = Math.floor(Math.random() * 75) + 10;
-    y = Math.floor(Math.random() * 75) + 10;
-
-    if (x > 20 && x < 80 && y > 15 && y < 85) {
-      isOverlap = true;
-    } else {
-      isOverlap = false;
-    }
-  }
+  let x = Math.floor(Math.random() * 75) + 10;
+  let y = Math.floor(Math.random() * 75) + 10;
   return { x, y };
 };
 
@@ -94,8 +82,8 @@ export default function TypewriterApp() {
     );
   }, []);
 
-  // Supabase 데이터 불러오기
-  const fetchPapers = async () => {
+  // Supabase 데이터 불러오기 (기존 위치가 있으면 유지, 없으면 랜덤 생성 후 매핑)
+  const fetchPapers = async (isInitial = false) => {
     try {
       const { data, error } = await supabase
         .from('papers')
@@ -108,24 +96,39 @@ export default function TypewriterApp() {
       }
 
       if (data) {
-        const formattedPapers: DiscardedPaper[] = data.map((item) => {
-          const { x, y } = generateNonOverlappingPos();
-          return {
-            id: Number(item.id),
-            created_at: item.created_at,
-            text: item.content || '',
-            x,
-            y,
-            rotate: Math.floor(Math.random() * 40) - 20,
-            scale: 0.85 + Math.random() * 0.3,
-            sentiment: (item.sentiment as SentimentType) || 'neutral',
-            user_id: String(item.user_id || ''),
-            picked_by: String(item.picked_by || ''),
-            is_picked: Boolean(item.is_picked),
-          };
-        });
+        setAllPapers((prevPapers) => {
+          return data.map((item) => {
+            const idNum = Number(item.id);
+            // 이미 화면에 존재하던 종이라면 기존 위치(x, y, rotate) 유지!
+            const existing = prevPapers.find((p) => p.id === idNum);
+            if (existing && !isInitial) {
+              return {
+                ...existing,
+                text: item.content || '',
+                sentiment: (item.sentiment as SentimentType) || 'neutral',
+                user_id: String(item.user_id || ''),
+                picked_by: String(item.picked_by || ''),
+                is_picked: Boolean(item.is_picked),
+              };
+            }
 
-        setAllPapers(formattedPapers);
+            // 새로 불러오거나 최초 로드인 경우에만 위치 랜덤 부여
+            const { x, y } = generateNonOverlappingPos();
+            return {
+              id: idNum,
+              created_at: item.created_at,
+              text: item.content || '',
+              x,
+              y,
+              rotate: Math.floor(Math.random() * 40) - 20,
+              scale: 0.85 + Math.random() * 0.3,
+              sentiment: (item.sentiment as SentimentType) || 'neutral',
+              user_id: String(item.user_id || ''),
+              picked_by: String(item.picked_by || ''),
+              is_picked: Boolean(item.is_picked),
+            };
+          });
+        });
       }
     } catch (err) {
       console.error('Fetch 예외 발생:', err);
@@ -133,7 +136,7 @@ export default function TypewriterApp() {
   };
 
   useEffect(() => {
-    if (mounted) fetchPapers();
+    if (mounted) fetchPapers(true);
   }, [mounted]);
 
   const analyzeSentiment = (inputText: string): SentimentType => {
@@ -182,7 +185,7 @@ export default function TypewriterApp() {
       console.error('Insert error:', error);
     } else {
       setText('');
-      fetchPapers();
+      fetchPapers(false);
     }
   };
 
@@ -202,15 +205,15 @@ export default function TypewriterApp() {
     } else {
       setSelectedPaper(null);
       setIsDiscardedPreviewOpen(false);
-      fetchPapers();
+      fetchPapers(false);
     }
   };
 
-  // 3. 쓰레기통 완전 삭제 (낙관적 업데이트 및 명확한 숫자 id 처리 적용)
+  // 3. 쓰레기통 영구 삭제
   const handleDeletePaper = async (paperId: number) => {
     const targetId = Number(paperId);
     
-    // UI에서 즉시 제거 (낙관적 업데이트)
+    // UI에서 즉시 제거
     setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
     setDraggingPaper(null);
     setIsBinHovered(false);
@@ -223,7 +226,7 @@ export default function TypewriterApp() {
     if (error) {
       console.error('삭제 오류:', error);
       alert('삭제에 실패했습니다: ' + error.message);
-      fetchPapers(); // 실패 시 서버 데이터 복구
+      fetchPapers(false);
     }
   };
 
@@ -240,10 +243,10 @@ export default function TypewriterApp() {
     if (trashBinRef.current) {
       const rect = trashBinRef.current.getBoundingClientRect();
       const isInside =
-        e.clientX >= rect.left - 30 &&
-        e.clientX <= rect.right + 30 &&
-        e.clientY >= rect.top - 30 &&
-        e.clientY <= rect.bottom + 30;
+        e.clientX >= rect.left - 40 &&
+        e.clientX <= rect.right + 40 &&
+        e.clientY >= rect.top - 40 &&
+        e.clientY <= rect.bottom + 40;
       setIsBinHovered(isInside);
     }
   };
@@ -410,6 +413,7 @@ export default function TypewriterApp() {
                   zIndex: isDragging ? 200 : 30,
                   cursor: isDragging ? 'grabbing' : 'grab',
                   opacity: isDragging ? 0.85 : 1,
+                  transition: isDragging ? 'none' : 'left 0.3s ease, top 0.3s ease',
                 }}
               >
                 <img
