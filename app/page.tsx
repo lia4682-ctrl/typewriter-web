@@ -19,7 +19,6 @@ interface DiscardedPaper {
   is_picked?: boolean;
 }
 
-// 2. 감성적인 프레임 6가지로 다각화
 const FRAME_STYLES = [
   { id: 'monologue-3am', name: 'Monologue at 3 AM', bgColor: '#121318', textColor: '#e2e4ed', font: 'serif' },
   { id: 'poetic-parchment', name: 'Poetic Parchment', bgColor: '#f7f4ed', textColor: '#2c2825', font: 'serif' },
@@ -50,7 +49,6 @@ export default function TypewriterApp() {
   const [allPapers, setAllPapers] = useState<DiscardedPaper[]>([]);
   const [selectedPaper, setSelectedPaper] = useState<DiscardedPaper | null>(null);
 
-  // 모달 상태
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -58,7 +56,6 @@ export default function TypewriterApp() {
   const [isDiscardedPreviewOpen, setIsDiscardedPreviewOpen] = useState(false);
   const [discardedFrameIndex, setDiscardedFrameIndex] = useState(0);
 
-  // 드래그앤드롭
   const [draggingPaper, setDraggingPaper] = useState<DiscardedPaper | null>(null);
   const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isBinHovered, setIsBinHovered] = useState(false);
@@ -85,7 +82,6 @@ export default function TypewriterApp() {
       }).toUpperCase()
     );
 
-    // URL 파라미터에 id가 있으면 해당 메모 자동 열기 (링크 공유 대응)
     const params = new URLSearchParams(window.location.search);
     const sharedId = params.get('id');
     if (sharedId) {
@@ -113,7 +109,8 @@ export default function TypewriterApp() {
     }
   };
 
-  const fetchPapers = async (isInitial = false) => {
+  // 데이터 동기화 시 기존 로컬 좌표와 상태가 롤백되지 않도록 안전하게 병합
+  const fetchPapers = async () => {
     try {
       const { data, error } = await supabase
         .from('papers')
@@ -129,8 +126,9 @@ export default function TypewriterApp() {
         setAllPapers((prevPapers) => {
           return data.map((item) => {
             const idNum = Number(item.id);
+            // 이미 화면에 존재하는 종이라면 기존 좌표(x, y, rotate 등)를 유지하여 튀거나 롤백되는 현상 방지
             const existing = prevPapers.find((p) => p.id === idNum);
-            if (existing && !isInitial) {
+            if (existing) {
               return {
                 ...existing,
                 text: item.content || '',
@@ -141,6 +139,7 @@ export default function TypewriterApp() {
               };
             }
 
+            // 새로 추가된 데이터만 랜덤 좌표 부여
             const { x, y } = generateNonOverlappingPos();
             return {
               id: idNum,
@@ -164,7 +163,7 @@ export default function TypewriterApp() {
   };
 
   useEffect(() => {
-    if (mounted) fetchPapers(true);
+    if (mounted) fetchPapers();
   }, [mounted]);
 
   const analyzeSentiment = (inputText: string): SentimentType => {
@@ -190,6 +189,7 @@ export default function TypewriterApp() {
     }
   };
 
+  // 쓰레기 버리기: 즉시 상태에 반영하고 서버에 전송
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -197,25 +197,52 @@ export default function TypewriterApp() {
     }
 
     const sentiment = analyzeSentiment(text);
+    const tempId = Date.now(); // 임시 ID로 즉시 렌더링 준비
 
-    const { error } = await supabase.from('papers').insert([
+    const newPaper: DiscardedPaper = {
+      id: tempId,
+      created_at: new Date().toISOString(),
+      text: text,
+      x: Math.floor(Math.random() * 75) + 10,
+      y: Math.floor(Math.random() * 75) + 10,
+      rotate: Math.floor(Math.random() * 40) - 20,
+      scale: 0.85 + Math.random() * 0.3,
+      sentiment: sentiment,
+      user_id: userId,
+      is_picked: false,
+    };
+
+    // 낙관적 업데이트: 서버 응답 기다리기 전에 화면에 먼저 띄움
+    setAllPapers((prev) => [newPaper, ...prev]);
+    setText('');
+
+    const { data, error } = await supabase.from('papers').insert([
       {
-        content: text,
-        sentiment: sentiment,
+        content: newPaper.text,
+        sentiment: newPaper.sentiment,
         is_picked: false,
         user_id: String(userId),
       },
-    ]);
+    ]).select();
 
     if (error) {
       alert('버리기에 실패했습니다: ' + error.message);
-    } else {
-      setText('');
-      fetchPapers(false);
+      // 실패 시 롤백 (임시로 넣었던 것 제거)
+      setAllPapers((prev) => prev.filter((p) => p.id !== tempId));
+    } else if (data) {
+      // 서버에서 발급된 진짜 ID로 교체
+      fetchPapers();
     }
   };
 
   const handlePickUp = async (paperId: number) => {
+    // 낙관적 업데이트: 즉시 주운 상태로 변경
+    setAllPapers((prev) =>
+      prev.map((p) => (p.id === paperId ? { ...p, is_picked: true, picked_by: userId } : p))
+    );
+    setSelectedPaper(null);
+    setIsDiscardedPreviewOpen(false);
+
     const { error } = await supabase
       .from('papers')
       .update({
@@ -226,16 +253,14 @@ export default function TypewriterApp() {
 
     if (error) {
       alert('주우는데 실패했습니다: ' + error.message);
-    } else {
-      setSelectedPaper(null);
-      setIsDiscardedPreviewOpen(false);
-      fetchPapers(false);
+      fetchPapers();
     }
   };
 
   const handleDeletePaper = async (paperId: number) => {
     const targetId = Number(paperId);
     
+    // 낙관적 업데이트: 휴지통에 넣는 순간 화면에서 즉시 삭제
     setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
     setDraggingPaper(null);
     setIsBinHovered(false);
@@ -247,11 +272,10 @@ export default function TypewriterApp() {
 
     if (error) {
       alert('삭제에 실패했습니다: ' + error.message);
-      fetchPapers(false);
+      fetchPapers();
     }
   };
 
-  // 3. 링크 공유 함수
   const handleCopyShareLink = (paperId: number) => {
     const shareUrl = `${window.location.origin}${window.location.pathname}?id=${paperId}`;
     navigator.clipboard.writeText(shareUrl).then(() => {
@@ -344,7 +368,6 @@ export default function TypewriterApp() {
             position: 'relative',
           }}
         >
-          {/* 좌측 상단 연필 이미지 */}
           <img
             src="/pencil.png"
             alt="Pencil"
@@ -373,7 +396,6 @@ export default function TypewriterApp() {
             title="내 계정 정보"
           />
 
-          {/* 1. 쓰레기통 크기 10배 확대 및 4. 하얀색 그라데이션 적용 */}
           <img
             ref={trashBinRef}
             src="/bin.png"
@@ -382,7 +404,7 @@ export default function TypewriterApp() {
               position: 'absolute',
               right: '20px',
               top: '15px',
-              width: '240px', // 기존보다 대폭 확대
+              width: '240px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
@@ -390,13 +412,12 @@ export default function TypewriterApp() {
               transition: 'transform 0.2s ease, filter 0.2s ease',
               transform: isBinHovered ? 'scale(1.1)' : 'scale(1)',
               filter: isBinHovered
-                ? 'drop-shadow(0 0 24px rgba(255, 255, 255, 0.95)) brightness(1.2)' // 하얀색 그라데이션 글로우
+                ? 'drop-shadow(0 0 24px rgba(255, 255, 255, 0.95)) brightness(1.2)'
                 : 'drop-shadow(0 4px 10px rgba(0,0,0,0.7))',
             }}
             title="드래그해서 여기 놓으면 완전히 삭제됩니다"
           />
 
-          {/* 우측 중앙 버린 종이들 모아보기 버튼 */}
           <button
             onClick={() => setCurrentPage('trash')}
             style={{
@@ -418,7 +439,6 @@ export default function TypewriterApp() {
             버린 종이들 모아보기 ▶
           </button>
 
-          {/* 타자기 바닥 쓰레기들 */}
           {myFloorPapers.map((paper) => {
             const isDragging = draggingPaper?.id === paper.id;
             return (
@@ -454,7 +474,6 @@ export default function TypewriterApp() {
             );
           })}
 
-          {/* 타자기 본체 */}
           <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 20, pointerEvents: 'none' }}>
             <div
               style={{
@@ -518,7 +537,6 @@ export default function TypewriterApp() {
             />
           </div>
 
-          {/* 하단 버튼들 */}
           <div
             style={{
               position: 'absolute',
@@ -644,7 +662,6 @@ export default function TypewriterApp() {
                   }}
                   style={{
                     backgroundColor: '#262626',
-                    // 5. 내가 쓴 종이와 남이 주운/타인의 종이 시각적 구분 테두리/분위기 차별화
                     border: isMine 
                       ? '1px solid #d9534f' 
                       : isPickedByMe 
@@ -662,7 +679,6 @@ export default function TypewriterApp() {
                     position: 'relative',
                   }}
                 >
-                  {/* 5. 구분 마크 부여 */}
                   <div style={{ position: 'absolute', top: '10px', right: '12px', fontSize: '10px', color: isMine ? '#d9534f' : isPickedByMe ? '#4a90e2' : '#777' }}>
                     {isMine ? '✍️ 내가 씀' : isPickedByMe ? '📦 내가 주움' : '🌊 타인의 조각'}
                   </div>
@@ -707,7 +723,6 @@ export default function TypewriterApp() {
         </section>
       </div>
 
-      {/* 계정 정보 모달 */}
       {showProfileModal && (
         <div onClick={() => setShowProfileModal(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
@@ -728,7 +743,6 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* 카카오 커피 지원 모달 */}
       {isKakaoModalOpen && (
         <div onClick={() => setIsKakaoModalOpen(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
@@ -739,7 +753,6 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* 미리보기 모달 */}
       {isPreviewOpen && (
         <div onClick={() => setIsPreviewOpen(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%' }}>
@@ -754,7 +767,6 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* 버린 종이 보기 모달 */}
       {isDiscardedPreviewOpen && selectedPaper && (
         <div onClick={() => setIsDiscardedPreviewOpen(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%' }}>
