@@ -1074,17 +1074,6 @@ const modalBgStyle: React.CSSProperties = {
   width: '100vw', height: '100dvh',
   backgroundColor: 'rgba(0,0,0,0.85)',
   display: 'flex', justifyContent: 'center', alignItems: 'center',
-  zIndex: zIndexMap = 300, // corrected to standard value
-  padding: '20px',
-};
-
-// Re-declared to avoid reference issues
-const safeModalBgStyle: React.CSSProperties = {
-  position: 'fixed',
-  top: 0, left: 0,
-  width: '100vw', height: '100dvh',
-  backgroundColor: 'rgba(0,0,0,0.85)',
-  display: 'flex', justifyContent: 'center', alignItems: 'center',
   zIndex: 300,
   padding: '20px',
 };
