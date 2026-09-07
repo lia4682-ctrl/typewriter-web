@@ -533,14 +533,6 @@ export default function TypewriterApp() {
             max-width: 420px;
           }
         }
-        .trash-bin-icon {
-          width: 75px;
-        }
-        @media (max-width: 768px) {
-          .trash-bin-icon {
-            width: 45px;
-          }
-        }
       `}</style>
 
       {showLoginModal && (
@@ -604,9 +596,9 @@ export default function TypewriterApp() {
             onClick={() => setShowProfileModal(true)}
             style={{
               position: 'absolute',
-              left: '20px',
-              top: '20px',
-              width: '90px',
+              left: '24px',
+              top: '24px',
+              width: '140px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
@@ -617,7 +609,7 @@ export default function TypewriterApp() {
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.opacity = '1';
-              e.currentTarget.style.transform = 'scale(1.1)';
+              e.currentTarget.style.transform = 'scale(1.05)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.opacity = '0.85';
@@ -630,11 +622,11 @@ export default function TypewriterApp() {
             ref={trashBinRef}
             src="/bin.png"
             alt="Trash Bin"
-            className="trash-bin-icon"
             style={{
               position: 'absolute',
-              right: '20px',
-              top: '20px',
+              right: '24px',
+              top: '24px',
+              width: '110px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
@@ -652,16 +644,16 @@ export default function TypewriterApp() {
             onClick={() => setCurrentPage('trash')}
             style={{
               position: 'absolute',
-              right: '20px',
+              right: '24px',
               top: '50%',
               transform: 'translateY(-50%)',
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               color: '#d0d0d0',
               border: '1px solid rgba(255, 255, 255, 0.15)',
-              padding: '8px 12px',
+              padding: '10px 14px',
               borderRadius: '20px',
               cursor: 'pointer',
-              fontSize: '11px',
+              fontSize: '12px',
               backdropFilter: 'blur(4px)',
               zIndex: 100,
             }}
@@ -772,10 +764,10 @@ export default function TypewriterApp() {
               bottom: '24px',
               left: '50%',
               transform: 'translateX(-50%)',
-              width: '100%',
+              width: 'calc(100% - 32px)',
               maxWidth: '420px',
               backgroundColor: 'transparent',
-              padding: '0 16px',
+              padding: '0',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
