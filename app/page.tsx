@@ -91,10 +91,9 @@ export default function TypewriterApp() {
   useEffect(() => {
     setMounted(true);
 
-    // 식별용 로그인/사용자 ID 관리 (localStorage)
+    // 식별용 ID 관리
     let storedUserId = localStorage.getItem('typewriter_user_id');
     if (!storedUserId) {
-      // 8자리 무작위 숫자로 고유 ID 생성 (예: 010-8472-1928 또는 사용자 고유 번호)
       const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
       storedUserId = `010-${randomNum.substring(0, 4)}-${randomNum.substring(4)}`;
       localStorage.setItem('typewriter_user_id', storedUserId);
@@ -111,7 +110,7 @@ export default function TypewriterApp() {
     );
   }, []);
 
-  // Supabase 데이터 불러오기 (안전한 쿼리 처리)
+  // Supabase 데이터 불러오기
   const fetchPapers = async () => {
     try {
       const { data, error } = await supabase
@@ -128,7 +127,7 @@ export default function TypewriterApp() {
         const formattedPapers: DiscardedPaper[] = data.map((item) => {
           const { x, y } = generateNonOverlappingPos();
           return {
-            id: item.id,
+            id: Number(item.id),
             created_at: item.created_at,
             text: item.content || item.text || '',
             x,
@@ -189,7 +188,7 @@ export default function TypewriterApp() {
         content: text,
         sentiment: sentiment,
         is_picked: false,
-        user_id: userId,
+        user_id: String(userId),
       },
     ]);
 
@@ -208,9 +207,9 @@ export default function TypewriterApp() {
       .from('papers')
       .update({
         is_picked: true,
-        picked_by: userId,
+        picked_by: String(userId),
       })
-      .eq('id', paperId);
+      .eq('id', Number(paperId));
 
     if (error) {
       alert('주우는데 실패했습니다.');
@@ -222,12 +221,12 @@ export default function TypewriterApp() {
     }
   };
 
-  // 3. 쓰레기통 드래그 앤 드롭으로 완전히 삭제
+  // 3. 쓰레기통 드래그 앤 드롭 완전 삭제
   const handleDeletePaper = async (paperId: number) => {
     const { error } = await supabase
       .from('papers')
       .delete()
-      .eq('id', paperId);
+      .eq('id', Number(paperId));
 
     if (error) {
       console.error('삭제 오류:', error);
@@ -237,7 +236,6 @@ export default function TypewriterApp() {
     }
   };
 
-  // 드래그 이벤트를 window 기준으로 추적
   const handleMouseDownPaper = (e: React.MouseEvent, paper: DiscardedPaper) => {
     e.stopPropagation();
     setDraggingPaper(paper);
@@ -273,12 +271,10 @@ export default function TypewriterApp() {
     return <main style={{ backgroundColor: '#121212', height: '100vh', width: '100vw' }} />;
   }
 
-  // 타자기 바닥: 내 종이 + 주운 종이만
   const myFloorPapers = allPapers.filter(
     (p) => p.user_id === userId || (p.is_picked && p.picked_by === userId)
   );
 
-  // 모아보기 목록
   const othersPapers = allPapers.filter((p) => p.user_id !== userId && !p.is_picked);
   const myCollectedPapers = allPapers.filter((p) => p.user_id === userId || p.picked_by === userId);
 
@@ -324,73 +320,77 @@ export default function TypewriterApp() {
             position: 'relative',
           }}
         >
-          {/* 상단 컨트롤 영역: ✏️ 연필 버튼, 날것의 쓰레기통 이미지, 모아보기 버튼 */}
-          <div
+          {/* ✏️ 좌측 상단 연필 아이콘 (쓰레기통과 동일한 톤앤매너) */}
+          <button
+            onClick={() => setShowProfileModal(true)}
             style={{
               position: 'absolute',
-              right: '25px',
-              top: '25px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '14px',
+              left: '40px',
+              top: '30px',
+              backgroundColor: 'transparent',
+              border: 'none',
+              fontSize: '22px',
+              cursor: 'pointer',
+              zIndex: 100,
+              opacity: 0.8,
+              transition: 'transform 0.2s ease, opacity 0.2s ease',
+              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.opacity = '1';
+              e.currentTarget.style.transform = 'scale(1.15)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.opacity = '0.8';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+            title="내 로그인 정보"
+          >
+            ✏️
+          </button>
+
+          {/* 🗑️ 우측 상단 쓰레기통 이미지 */}
+          <img
+            ref={trashBinRef}
+            src="/bin.png"
+            alt="Trash Bin"
+            style={{
+              position: 'absolute',
+              right: '40px',
+              top: '30px',
+              width: '32px',
+              height: 'auto',
+              objectFit: 'contain',
+              cursor: 'pointer',
+              zIndex: 100,
+              transition: 'transform 0.2s ease, filter 0.2s ease',
+              transform: isBinHovered ? 'scale(1.25)' : 'scale(1)',
+              filter: isBinHovered ? 'drop-shadow(0 0 8px rgba(217, 83, 79, 0.8))' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+            }}
+            title="드래그해서 여기 놓으면 완전히 삭제됩니다"
+          />
+
+          {/* 우측 중앙 버린 종이들 모아보기 버튼 */}
+          <button
+            onClick={() => setCurrentPage('trash')}
+            style={{
+              position: 'absolute',
+              right: '30px',
+              top: '50%',
+              transform: 'translateY(-50%)',
+              backgroundColor: 'rgba(255, 255, 255, 0.08)',
+              color: '#d0d0d0',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              padding: '10px 16px',
+              borderRadius: '20px',
+              cursor: 'pointer',
+              fontSize: '12px',
+              backdropFilter: 'blur(4px)',
               zIndex: 100,
             }}
           >
-            {/* ✏️ 로그인 정보/연필 버튼 */}
-            <button
-              onClick={() => setShowProfileModal(true)}
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
-                borderRadius: '50%',
-                width: '42px',
-                height: '42px',
-                fontSize: '18px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                color: '#fff',
-                backdropFilter: 'blur(4px)',
-              }}
-              title="내 로그인 정보"
-            >
-              ✏️
-            </button>
-
-            {/* 날것의 bin.png 쓰레기통 */}
-            <img
-              ref={trashBinRef}
-              src="/bin.png"
-              alt="Trash Bin"
-              style={{
-                width: '46px',
-                height: '46px',
-                objectFit: 'contain',
-                cursor: 'pointer',
-                transition: 'transform 0.2s ease, filter 0.2s ease',
-                transform: isBinHovered ? 'scale(1.25)' : 'scale(1)',
-                filter: isBinHovered ? 'drop-shadow(0 0 8px rgba(217, 83, 79, 0.8))' : 'none',
-              }}
-              title="드래그해서 여기 놓으면 완전히 삭제됩니다"
-            />
-
-            <button
-              onClick={() => setCurrentPage('trash')}
-              style={{
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                color: '#e0e0e0',
-                border: '1px solid rgba(255, 255, 255, 0.25)',
-                padding: '10px 16px',
-                borderRadius: '20px',
-                cursor: 'pointer',
-                fontSize: '13px',
-                backdropFilter: 'blur(4px)',
-              }}
-            >
-              버린 종이들 모아보기 ▶
-            </button>
-          </div>
+            버린 종이들 모아보기 ▶
+          </button>
 
           {/* 타자기 바닥 쓰레기들 (내 글 + 주운 글) */}
           {myFloorPapers.map((paper) => {
@@ -670,13 +670,13 @@ export default function TypewriterApp() {
         </section>
       </div>
 
-      {/* ✏️ 연필 버튼 클릭 시 내 정보 팝업 모달 */}
+      {/* ✏️ 연필 모달 */}
       {showProfileModal && (
         <div onClick={() => setShowProfileModal(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px' }}>✏️ 내 로그인 정보</h3>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px' }}>✏️ 내 계정 정보</h3>
             <div style={{ backgroundColor: '#1e1e1e', padding: '16px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#888' }}>현재 접속중인 계정 번호</p>
+              <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#888' }}>접속 계정 / 번호</p>
               <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#4a90e2', letterSpacing: '1px' }}>
                 {userId}
               </p>
