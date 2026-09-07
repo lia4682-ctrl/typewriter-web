@@ -98,6 +98,7 @@ export default function TypewriterApp() {
   const [text, setText] = useState<string>('');
   const [papers, setPapers] = useState<DiscardedPaper[]>([]);
   const [selectedPaperText, setSelectedPaperText] = useState<string | null>(null);
+  const [selectedPaperId, setSelectedPaperId] = useState<number | null>(null);
   const [isHoveredBin, setIsHoveredBin] = useState(false);
   const [draggingId, setDraggingId] = useState<number | null>(null);
   const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
@@ -123,14 +124,13 @@ export default function TypewriterApp() {
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
-  // Client Hydration 처리 및 초기 날짜 세팅 (SSR/CSR 불일치 해결)
+  // Client Hydration 처리 및 초기 날짜 세팅
   useEffect(() => {
     setMounted(true);
 
     const today = new Date();
     setCurrentDateStr(today.toISOString().slice(0, 10));
 
-    // 타자기 종이 상단 날짜 포맷 (예: SEPTEMBER 2, 2026)
     const formattedPaperDate = today.toLocaleDateString('en-US', {
       month: 'long',
       day: 'numeric',
@@ -175,6 +175,7 @@ export default function TypewriterApp() {
       const sharedPaper = params.get('paper');
       if (sharedPaper) {
         setSelectedPaperText(sharedPaper);
+        setSelectedPaperId(null);
         setIsDiscardedPreviewOpen(true);
       }
     }
@@ -472,8 +473,56 @@ export default function TypewriterApp() {
       console.error('삭제 오류:', error);
     } else {
       setPapers((prev) => prev.filter((p) => p.id !== id));
-      if (selectedPaperText) setSelectedPaperText(null);
+      if (selectedPaperId === id) {
+        setSelectedPaperText(null);
+        setSelectedPaperId(null);
+        setIsDiscardedPreviewOpen(false);
+      }
     }
+  };
+
+  // 신규 기능: 버려진 종이 전체 삭제
+  const handleClearAllPapers = async () => {
+    if (papers.length === 0) return;
+    if (!confirm('모든 버린 종이를 영구 삭제하시겠습니까?')) return;
+
+    playTrashSound();
+    const paperIds = papers.map((p) => p.id);
+    const { error } = await supabase
+      .from('papers')
+      .update({ is_picked: true })
+      .in('id', paperIds);
+
+    if (error) {
+      console.error('전체 삭제 오류:', error);
+    } else {
+      setPapers([]);
+      setSelectedPaperText(null);
+      setSelectedPaperId(null);
+      setIsDiscardedPreviewOpen(false);
+    }
+  };
+
+  // 신규 기능: 버린 종이 다시 주워서 타자기로 가져오기 (재작성)
+  const handleRestorePaper = async (paperId: number | null, paperText: string) => {
+    if (paperId !== null) {
+      const { error } = await supabase
+        .from('papers')
+        .update({ is_picked: true })
+        .eq('id', paperId);
+
+      if (error) {
+        console.error('종이 줍기 오류:', error);
+        return;
+      }
+      setPapers((prev) => prev.filter((p) => p.id !== paperId));
+    }
+
+    setText(paperText);
+    setIsDiscardedPreviewOpen(false);
+    setSelectedPaperText(null);
+    setSelectedPaperId(null);
+    setCurrentPage('typewriter');
   };
 
   // ==================== 드래그 앤 드롭 제어 ====================
@@ -586,9 +635,10 @@ export default function TypewriterApp() {
     };
   }, [papers]);
 
-  const handlePaperClick = (paperText: string) => {
+  const handlePaperClick = (paper: DiscardedPaper) => {
     if (!isMovedRef.current) {
-      setSelectedPaperText(paperText);
+      setSelectedPaperText(paper.text);
+      setSelectedPaperId(paper.id);
       setIsDiscardedPreviewOpen(true);
     }
   };
@@ -618,7 +668,7 @@ export default function TypewriterApp() {
     touchEndX.current = 0;
   };
 
-  // 클라이언트 마운트 전에는 빈 배경만 렌더링 (Hydration mismatch 방지)
+  // 클라이언트 마운트 전에는 빈 배경만 렌더링
   if (!mounted) {
     return <main style={{ backgroundColor: '#121212', height: '100vh', width: '100vw' }} />;
   }
@@ -737,7 +787,7 @@ export default function TypewriterApp() {
               key={paper.id}
               onMouseDown={(e) => handleStartDrag(e.clientX, e.clientY, paper, e)}
               onTouchStart={(e) => handleStartDrag(e.touches[0].clientX, e.touches[0].clientY, paper, e)}
-              onClick={() => handlePaperClick(paper.text)}
+              onClick={() => handlePaperClick(paper)}
               style={{
                 position: 'absolute',
                 left: `${paper.x}px`,
@@ -781,7 +831,6 @@ export default function TypewriterApp() {
                 flexDirection: 'column',
               }}
             >
-              {/* 종이 상단 날짜 표시 (Hydration 안전 처리) */}
               {paperDateStr && (
                 <div
                   style={{
@@ -983,6 +1032,26 @@ export default function TypewriterApp() {
             ◀ 타자기로 돌아가기
           </button>
 
+          {papers.length > 0 && (
+            <button
+              onClick={handleClearAllPapers}
+              style={{
+                position: 'absolute',
+                right: '20px',
+                top: '20px',
+                backgroundColor: '#3a2222',
+                color: '#ff6b6b',
+                border: '1px solid #5c2c2c',
+                borderRadius: '8px',
+                padding: '6px 12px',
+                fontSize: '12px',
+                cursor: 'pointer',
+              }}
+            >
+              🗑️ 전체 영구 삭제
+            </button>
+          )}
+
           <header style={{ textAlign: 'center', marginTop: '30px', marginBottom: '30px' }}>
             <h2 style={{ fontSize: '22px', letterSpacing: '2px', color: '#f0f0f0', margin: 0 }}>
               📜 버려진 종이 조각들
@@ -1010,7 +1079,7 @@ export default function TypewriterApp() {
               papers.map((paper, index) => (
                 <div
                   key={paper.id}
-                  onClick={() => handlePaperClick(paper.text)}
+                  onClick={() => handlePaperClick(paper)}
                   style={{
                     backgroundColor: '#262626',
                     border: '1px solid #3d3d3d',
@@ -1054,33 +1123,50 @@ export default function TypewriterApp() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleCopyShareLink(paper.text);
+                        handleRestorePaper(paper.id, paper.text);
                       }}
                       style={{
                         backgroundColor: 'transparent',
-                        color: '#888',
+                        color: '#4dabf7',
                         border: 'none',
                         fontSize: '11px',
                         cursor: 'pointer',
                       }}
                     >
-                      🔗 공유
+                      ✍️ 다시 쓰기
                     </button>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handlePermanentDelete(paper.id);
-                      }}
-                      style={{
-                        backgroundColor: 'transparent',
-                        color: '#d9534f',
-                        border: 'none',
-                        fontSize: '11px',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      영구 삭제
-                    </button>
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopyShareLink(paper.text);
+                        }}
+                        style={{
+                          backgroundColor: 'transparent',
+                          color: '#888',
+                          border: 'none',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        🔗 공유
+                      </button>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handlePermanentDelete(paper.id);
+                        }}
+                        style={{
+                          backgroundColor: 'transparent',
+                          color: '#d9534f',
+                          border: 'none',
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        영구 삭제
+                      </button>
+                    </div>
                   </div>
                 </div>
               ))
@@ -1240,7 +1326,11 @@ export default function TypewriterApp() {
       {/* 📜 버려진 종이 상세보기/미리보기 모달 */}
       {isDiscardedPreviewOpen && selectedPaperText && (
         <div
-          onClick={() => setIsDiscardedPreviewOpen(false)}
+          onClick={() => {
+            setIsDiscardedPreviewOpen(false);
+            setSelectedPaperText(null);
+            setSelectedPaperId(null);
+          }}
           style={{
             position: 'fixed',
             top: 0,
@@ -1333,7 +1423,23 @@ export default function TypewriterApp() {
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', marginTop: '20px', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '8px', marginTop: '20px', width: '100%', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => handleRestorePaper(selectedPaperId, selectedPaperText)}
+                style={{
+                  flex: '1 1 100%',
+                  padding: '12px',
+                  backgroundColor: '#1c7ed6',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                }}
+              >
+                ✍️ 이 종이 주워서 다시 쓰기
+              </button>
               <button
                 onClick={handleRandomDiscardedFrame}
                 style={{
