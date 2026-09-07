@@ -532,10 +532,10 @@ export default function TypewriterApp() {
         }
         .typewriter-input-wrapper {
           position: absolute;
-          top: 15%;
-          left: 31%; /* 왼쪽 여백을 늘려 종이 안쪽으로 이동 */
-          width: 38%; /* 가로 폭을 줄여 종이 밖으로 나가지 않게 조절 */
-          height: 16%;
+          top: 18%; /* 위쪽 여백을 더 주어 아래로 내림 */
+          left: 33%; /* 왼쪽 시작점을 오른쪽으로 더 당김 */
+          width: 34%; /* 가로 폭을 더 줄여서 양옆이 안 삐져나가게 함 */
+          height: 15%;
           padding: 8px;
           box-sizing: border-box;
           z-index: 3;
