@@ -520,14 +520,25 @@ export default function TypewriterApp() {
       }}
     >
       <style>{`
-        .typewriter-wrapper {
-          width: 82%;
-          max-width: 420px;
+        .typewriter-container {
+          width: 90%;
+          max-width: 680px;
           aspect-ratio: 4 / 3.3;
+          margin: 0 auto;
+          position: relative;
         }
-        @media (min-width: 768px) {
-          .typewriter-wrapper {
-            max-width: 520px;
+        @media (max-width: 768px) {
+          .typewriter-container {
+            width: 95%;
+            max-width: 420px;
+          }
+        }
+        .trash-bin-icon {
+          width: 75px;
+        }
+        @media (max-width: 768px) {
+          .trash-bin-icon {
+            width: 45px;
           }
         }
       `}</style>
@@ -577,12 +588,14 @@ export default function TypewriterApp() {
         <section
           style={{
             width: '100vw',
-            height: '100%',
+            height: '100vh',
             display: 'flex',
             flexDirection: 'column',
             justifyContent: 'center',
             alignItems: 'center',
             position: 'relative',
+            boxSizing: 'border-box',
+            paddingBottom: '110px',
           }}
         >
           <img
@@ -617,11 +630,11 @@ export default function TypewriterApp() {
             ref={trashBinRef}
             src="/bin.png"
             alt="Trash Bin"
+            className="trash-bin-icon"
             style={{
               position: 'absolute',
               right: '20px',
               top: '20px',
-              width: '45px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
@@ -691,7 +704,7 @@ export default function TypewriterApp() {
             );
           })}
 
-          <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 20, marginTop: '-30px' }}>
+          <div className="typewriter-container">
             <div
               style={{
                 position: 'absolute',
@@ -1040,7 +1053,7 @@ export default function TypewriterApp() {
                 {selectedPaper.text}
               </p>
               <span style={{ position: 'absolute', bottom: '20px', right: '25px', fontSize: '10px', opacity: 0.3 }}>
-                TYPEWRITER와이프 아카이브
+                TYPEWRITER 아카이브
               </span>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%', flexWrap: 'wrap' }}>
