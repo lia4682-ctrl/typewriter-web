@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { supabase } from '../lib/supabase';
 import { toPng } from 'html-to-image';
 
@@ -8,10 +8,12 @@ type SentimentType = 'positive' | 'negative' | 'neutral';
 
 interface DiscardedPaper {
   id: number;
+  created_at?: string;
   text: string;
   x: number;
   y: number;
   rotate: number;
+  scale: number;
   sentiment: SentimentType;
 }
 
@@ -97,9 +99,7 @@ export default function TypewriterApp() {
   const [currentPage, setCurrentPage] = useState<'typewriter' | 'trash'>('typewriter');
   const [text, setText] = useState<string>('');
   const [papers, setPapers] = useState<DiscardedPaper[]>([]);
-  const [selectedPaperText, setSelectedPaperText] = useState<string | null>(null);
-  const [isHoveredBin, setIsHoveredBin] = useState(false);
-  const [draggingId, setDraggingId] = useState<number | null>(null);
+  const [selectedPaper, setSelectedPaper] = useState<DiscardedPaper | null>(null);
   const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
 
   // 미리보기 모달 관련 상태
@@ -111,14 +111,8 @@ export default function TypewriterApp() {
   const typewriterSectionRef = useRef<HTMLElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
-  const binRef = useRef<HTMLDivElement | null>(null);
   const previewCardRef = useRef<HTMLDivElement | null>(null);
   const discardedPreviewCardRef = useRef<HTMLDivElement | null>(null);
-
-  // 드래그 제어용 Ref
-  const dragOffsetRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
-  const isMovedRef = useRef<boolean>(false);
-  const draggingIdRef = useRef<number | null>(null);
 
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
@@ -138,7 +132,7 @@ export default function TypewriterApp() {
     setPaperDateStr(formattedPaperDate);
   }, []);
 
-  // 1. Supabase에서 버려진 종이(is_picked: false) 데이터 가져오기
+  // 1. Supabase에서 버려진 종이(is_picked: false) 데이터 가져오기 및 랜덤 배치 좌표 부여
   const fetchPapers = async () => {
     const { data, error } = await supabase
       .from('papers')
@@ -149,18 +143,21 @@ export default function TypewriterApp() {
     if (error) {
       console.error('글 가져오기 오류:', error);
     } else if (data) {
-      // 프론트엔드상에서 위치 및 -15도 ~ +15도 사이의 불규칙한 회전각 생성
-      const formattedPapers: DiscardedPaper[] = data.map((item, index) => {
-        const defaultX = (index % 3) * 110 + 40;
-        const defaultY = Math.floor(index / 3) * 120 + 80;
-        const randomRotate = Math.floor(Math.random() * 30) - 15;
+      // 바닥 영역 퍼센트(%) 기반 무작위 위치 및 회전각 생성
+      const formattedPapers: DiscardedPaper[] = data.map((item) => {
+        const randomX = Math.floor(Math.random() * 80) + 5; // 5% ~ 85%
+        const randomY = Math.floor(Math.random() * 70) + 10; // 10% ~ 80%
+        const randomRotate = Math.floor(Math.random() * 40) - 20; // -20deg ~ 20deg
+        const randomScale = 0.85 + Math.random() * 0.3; // 0.85 ~ 1.15
 
         return {
           id: item.id,
+          created_at: item.created_at,
           text: item.content,
-          x: defaultX,
-          y: defaultY,
+          x: randomX,
+          y: randomY,
           rotate: randomRotate,
+          scale: randomScale,
           sentiment: (item.sentiment as SentimentType) || 'neutral',
         };
       });
@@ -180,7 +177,15 @@ export default function TypewriterApp() {
       const params = new URLSearchParams(window.location.search);
       const sharedPaper = params.get('paper');
       if (sharedPaper) {
-        setSelectedPaperText(sharedPaper);
+        setSelectedPaper({
+          id: 0,
+          text: sharedPaper,
+          x: 0,
+          y: 0,
+          rotate: 0,
+          scale: 1,
+          sentiment: 'neutral',
+        });
         setIsDiscardedPreviewOpen(true);
       }
     }
@@ -409,7 +414,7 @@ export default function TypewriterApp() {
     );
   };
 
-  // 2. 글 버리기 로직 (Supabase Insert - DB에 존재하는 필수 컬럼만 지정)
+  // 2. 글 버리기 로직
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -430,148 +435,46 @@ export default function TypewriterApp() {
       alert('버리기에 실패했습니다.');
       console.error(error);
     } else {
+      alert('원고가 어둠 속으로 버려졌습니다.');
       setText('');
       fetchPapers();
     }
   };
 
-  // 3. 종이 줍기/삭제 (Supabase Update: is_picked -> true)
-  const handlePermanentDelete = async (id: number) => {
+  // 3. 쓰레기 줍기 기능 (Supabase Update: is_picked -> true)
+  const handlePickUp = async (paperId: number) => {
     playTrashSound();
     const { error } = await supabase
       .from('papers')
       .update({ is_picked: true })
-      .eq('id', id);
+      .eq('id', paperId);
 
     if (error) {
-      console.error('삭제 오류:', error);
+      alert('주우는데 실패했습니다.');
+      console.error('수거 오류:', error);
     } else {
-      setPapers((prev) => prev.filter((p) => p.id !== id));
-      if (selectedPaperText) setSelectedPaperText(null);
+      alert('타인의 버려진 마음을 주웠습니다.');
+      setPapers((prev) => prev.filter((p) => p.id !== paperId));
+      setSelectedPaper(null);
+      setIsDiscardedPreviewOpen(false);
     }
   };
 
-  // ==================== 드래그 앤 드롭 제어 ====================
-  const handleStartDrag = (
-    clientX: number,
-    clientY: number,
-    paper: DiscardedPaper,
-    e: React.SyntheticEvent
-  ) => {
-    e.stopPropagation();
-    isMovedRef.current = false;
-    draggingIdRef.current = paper.id;
-    setDraggingId(paper.id);
-
-    dragOffsetRef.current = {
-      x: clientX - paper.x,
-      y: clientY - paper.y,
-    };
-  };
-
-  useEffect(() => {
-    const handleMove = (clientX: number, clientY: number) => {
-      if (draggingIdRef.current === null) return;
-      isMovedRef.current = true;
-
-      let sectionLeft = 0;
-      let sectionTop = 0;
-      if (typewriterSectionRef.current) {
-        const rect = typewriterSectionRef.current.getBoundingClientRect();
-        sectionLeft = rect.left;
-        sectionTop = rect.top;
-      }
-
-      const newX = clientX - sectionLeft - dragOffsetRef.current.x;
-      const newY = clientY - sectionTop - dragOffsetRef.current.y;
-
-      setPapers((prev) =>
-        prev.map((p) => (p.id === draggingIdRef.current ? { ...p, x: newX, y: newY } : p))
-      );
-
-      if (binRef.current) {
-        const binRect = binRef.current.getBoundingClientRect();
-        const isOver =
-          clientX >= binRect.left - 20 &&
-          clientX <= binRect.right + 20 &&
-          clientY >= binRect.top - 20 &&
-          clientY <= binRect.bottom + 20;
-
-        setIsHoveredBin(isOver);
-      }
-    };
-
-    const handleEnd = async (clientX: number, clientY: number) => {
-      const activeId = draggingIdRef.current;
-      if (activeId === null) return;
-
-      if (binRef.current) {
-        const binRect = binRef.current.getBoundingClientRect();
-        const isOver =
-          clientX >= binRect.left - 20 &&
-          clientX <= binRect.right + 20 &&
-          clientY >= binRect.top - 20 &&
-          clientY <= binRect.bottom + 20;
-
-        if (isOver) {
-          handlePermanentDelete(activeId);
-        }
-      }
-
-      draggingIdRef.current = null;
-      setDraggingId(null);
-      setIsHoveredBin(false);
-    };
-
-    const onMouseMove = (e: MouseEvent) => handleMove(e.clientX, e.clientY);
-    const onMouseUp = (e: MouseEvent) => handleEnd(e.clientX, e.clientY);
-
-    const onTouchMove = (e: TouchEvent) => {
-      if (draggingIdRef.current !== null) {
-        const touch = e.touches[0];
-        handleMove(touch.clientX, touch.clientY);
-      }
-    };
-
-    const onTouchEnd = (e: TouchEvent) => {
-      if (draggingIdRef.current !== null) {
-        const touch = e.changedTouches[0];
-        handleEnd(touch.clientX, touch.clientY);
-      }
-    };
-
-    window.addEventListener('mousemove', onMouseMove);
-    window.addEventListener('mouseup', onMouseUp);
-    window.addEventListener('touchmove', onTouchMove, { passive: false });
-    window.addEventListener('touchend', onTouchEnd);
-
-    return () => {
-      window.removeEventListener('mousemove', onMouseMove);
-      window.removeEventListener('mouseup', onMouseUp);
-      window.removeEventListener('touchmove', onTouchMove);
-      window.removeEventListener('touchend', onTouchEnd);
-    };
-  }, [papers]);
-
-  const handlePaperClick = (paperText: string) => {
-    if (!isMovedRef.current) {
-      setSelectedPaperText(paperText);
-      setIsDiscardedPreviewOpen(true);
-    }
+  const handlePaperClick = (paper: DiscardedPaper) => {
+    setSelectedPaper(paper);
+    setIsDiscardedPreviewOpen(true);
   };
 
   const handleTouchStartSwipe = (e: React.TouchEvent) => {
-    if (draggingIdRef.current !== null) return;
     touchStartX.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchMoveSwipe = (e: React.TouchEvent) => {
-    if (draggingIdRef.current !== null) return;
     touchEndX.current = e.targetTouches[0].clientX;
   };
 
   const handleTouchEndSwipe = () => {
-    if (draggingIdRef.current !== null || !touchStartX.current || !touchEndX.current) return;
+    if (!touchStartX.current || !touchEndX.current) return;
     const swipeDistance = touchStartX.current - touchEndX.current;
 
     if (swipeDistance > 70 && currentPage === 'typewriter') {
@@ -682,38 +585,28 @@ export default function TypewriterApp() {
             버린 종이들 모아보기 ▶
           </button>
 
-          <div
-            ref={binRef}
-            style={{
-              position: 'absolute',
-              top: '20px',
-              right: '20px',
-              width: '180px',
-              zIndex: 10,
-              transition: 'transform 0.2s ease',
-              transform: isHoveredBin ? 'scale(1.15)' : 'scale(1)',
-              pointerEvents: 'none',
-            }}
-          >
-            <img src="/bin.png" alt="Trash Bin" style={{ width: '100%', height: 'auto', display: 'block' }} />
-          </div>
-
+          {/* 바닥 영역에 무작위 흩뿌려진 종이들 */}
           {papers.map((paper) => (
             <div
               key={paper.id}
-              onMouseDown={(e) => handleStartDrag(e.clientX, e.clientY, paper, e)}
-              onTouchStart={(e) => handleStartDrag(e.touches[0].clientX, e.touches[0].clientY, paper, e)}
-              onClick={() => handlePaperClick(paper.text)}
+              onClick={() => handlePaperClick(paper)}
               style={{
                 position: 'absolute',
-                left: `${paper.x}px`,
-                top: `${paper.y}px`,
+                left: `${paper.x}%`,
+                top: `${paper.y}%`,
                 width: '110px',
-                transform: `rotate(${paper.rotate}deg)`,
-                zIndex: draggingId === paper.id ? 100 : 30,
-                cursor: 'grab',
-                touchAction: 'none',
-                transition: draggingId === paper.id ? 'none' : 'transform 0.1s ease',
+                transform: `rotate(${paper.rotate}deg) scale(${paper.scale})`,
+                zIndex: 30,
+                cursor: 'pointer',
+                transition: 'transform 0.2s ease, z-index 0.2s ease',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = `rotate(0deg) scale(1.15)`;
+                e.currentTarget.style.zIndex = '60';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = `rotate(${paper.rotate}deg) scale(${paper.scale})`;
+                e.currentTarget.style.zIndex = '30';
               }}
             >
               <img
@@ -724,6 +617,7 @@ export default function TypewriterApp() {
             </div>
           ))}
 
+          {/* 타자기 이미지 및 입력 창 */}
           <div
             className="typewriter-wrapper"
             style={{
@@ -809,6 +703,7 @@ export default function TypewriterApp() {
             />
           </div>
 
+          {/* 하단 버튼 바 */}
           <div
             style={{
               position: 'absolute',
@@ -953,7 +848,7 @@ export default function TypewriterApp() {
               📜 버려진 종이 조각들
             </h2>
             <p style={{ fontSize: '12px', color: '#777', marginTop: '8px' }}>
-              완전히 영구 삭제된 종이는 나타나지 않습니다.
+              수거된 종이는 나타나지 않습니다.
             </p>
           </header>
 
@@ -975,7 +870,7 @@ export default function TypewriterApp() {
               papers.map((paper, index) => (
                 <div
                   key={paper.id}
-                  onClick={() => handlePaperClick(paper.text)}
+                  onClick={() => handlePaperClick(paper)}
                   style={{
                     backgroundColor: '#262626',
                     border: '1px solid #3d3d3d',
@@ -1034,7 +929,7 @@ export default function TypewriterApp() {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        handlePermanentDelete(paper.id);
+                        handlePickUp(paper.id);
                       }}
                       style={{
                         backgroundColor: 'transparent',
@@ -1044,7 +939,7 @@ export default function TypewriterApp() {
                         cursor: 'pointer',
                       }}
                     >
-                      영구 삭제
+                      마음 줍기
                     </button>
                   </div>
                 </div>
@@ -1202,8 +1097,8 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* 📜 버려진 종이 상세보기/미리보기 모달 */}
-      {isDiscardedPreviewOpen && selectedPaperText && (
+      {/* 📜 버려진 종이 상세보기 및 줍기(수거) 모달 */}
+      {isDiscardedPreviewOpen && selectedPaper && (
         <div
           onClick={() => setIsDiscardedPreviewOpen(false)}
           style={{
@@ -1267,7 +1162,11 @@ export default function TypewriterApp() {
                   }}
                 >
                   <span>{currentDiscardedFrame.name.toUpperCase()}</span>
-                  <span suppressHydrationWarning>{currentDateStr}</span>
+                  <span suppressHydrationWarning>
+                    {selectedPaper.created_at
+                      ? new Date(selectedPaper.created_at).toLocaleDateString('ko-KR')
+                      : currentDateStr}
+                  </span>
                 </div>
 
                 <p
@@ -1279,7 +1178,7 @@ export default function TypewriterApp() {
                     margin: 0,
                   }}
                 >
-                  {selectedPaperText}
+                  {selectedPaper.text}
                 </p>
               </div>
 
@@ -1315,7 +1214,7 @@ export default function TypewriterApp() {
                 🎲 Frame
               </button>
               <button
-                onClick={() => handleCopyShareLink(selectedPaperText)}
+                onClick={() => handleCopyShareLink(selectedPaper.text)}
                 style={{
                   flex: 1,
                   padding: '12px',
@@ -1327,24 +1226,26 @@ export default function TypewriterApp() {
                   fontSize: '12px',
                 }}
               >
-                🔗 Link Share
+                🔗 Share
               </button>
-              <button
-                onClick={handleDownloadDiscardedImage}
-                style={{
-                  flex: 1.2,
-                  padding: '12px',
-                  backgroundColor: '#ffffff',
-                  color: '#000000',
-                  border: 'none',
-                  borderRadius: '8px',
-                  cursor: 'pointer',
-                  fontWeight: 'bold',
-                  fontSize: '12px',
-                }}
-              >
-                💾 Save PNG
-              </button>
+              {selectedPaper.id !== 0 && (
+                <button
+                  onClick={() => handlePickUp(selectedPaper.id)}
+                  style={{
+                    flex: 1.2,
+                    padding: '12px',
+                    backgroundColor: '#d9534f',
+                    color: '#ffffff',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 'bold',
+                    fontSize: '12px',
+                  }}
+                >
+                  🧹 마음 줍기
+                </button>
+              )}
             </div>
           </div>
         </div>
