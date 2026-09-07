@@ -20,24 +20,9 @@ interface DiscardedPaper {
 }
 
 const FRAME_STYLES = [
-  {
-    id: 'monologue-3am',
-    name: 'Monologue at 3 AM',
-    bgColor: '#121318',
-    textColor: '#e2e4ed',
-  },
-  {
-    id: 'poetic-parchment',
-    name: 'Poetic Parchment',
-    bgColor: '#f7f4ed',
-    textColor: '#2c2825',
-  },
-  {
-    id: 'faded-blueprint',
-    name: 'Faded Blueprint',
-    bgColor: '#1a2634',
-    textColor: '#b2c9e0',
-  },
+  { id: 'monologue-3am', name: 'Monologue at 3 AM', bgColor: '#121318', textColor: '#e2e4ed' },
+  { id: 'poetic-parchment', name: 'Poetic Parchment', bgColor: '#f7f4ed', textColor: '#2c2825' },
+  { id: 'faded-blueprint', name: 'Faded Blueprint', bgColor: '#1a2634', textColor: '#b2c9e0' },
 ];
 
 const POSITIVE_WORDS = ['좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나', '희망'];
@@ -49,10 +34,10 @@ const generateNonOverlappingPos = () => {
   let isOverlap = true;
 
   while (isOverlap) {
-    x = Math.floor(Math.random() * 80) + 5;
-    y = Math.floor(Math.random() * 80) + 5;
+    x = Math.floor(Math.random() * 75) + 10;
+    y = Math.floor(Math.random() * 75) + 10;
 
-    if (x > 22 && x < 78 && y > 15 && y < 85) {
+    if (x > 20 && x < 80 && y > 15 && y < 85) {
       isOverlap = true;
     } else {
       isOverlap = false;
@@ -69,7 +54,7 @@ export default function TypewriterApp() {
   const [currentPage, setCurrentPage] = useState<'typewriter' | 'trash'>('typewriter');
   const [trashTab, setTrashTab] = useState<'others' | 'mine'>('others');
   const [text, setText] = useState<string>('');
-  
+
   const [allPapers, setAllPapers] = useState<DiscardedPaper[]>([]);
   const [selectedPaper, setSelectedPaper] = useState<DiscardedPaper | null>(null);
 
@@ -91,7 +76,6 @@ export default function TypewriterApp() {
   useEffect(() => {
     setMounted(true);
 
-    // 식별용 ID 관리
     let storedUserId = localStorage.getItem('typewriter_user_id');
     if (!storedUserId) {
       const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
@@ -175,7 +159,7 @@ export default function TypewriterApp() {
     }
   };
 
-  // 1. 종이 버리기
+  // 1. 종이 버리기 (데이터베이스 연동 보완)
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -183,9 +167,12 @@ export default function TypewriterApp() {
     }
 
     const sentiment = analyzeSentiment(text);
+
+    // DB 스키마 안전성 보장 (content & text 모두 전달)
     const { error } = await supabase.from('papers').insert([
       {
         content: text,
+        text: text,
         sentiment: sentiment,
         is_picked: false,
         user_id: String(userId),
@@ -193,8 +180,8 @@ export default function TypewriterApp() {
     ]);
 
     if (error) {
-      alert('버리기에 실패했습니다.');
-      console.error(error);
+      alert('버리기에 실패했습니다: ' + error.message);
+      console.error('Insert error:', error);
     } else {
       setText('');
       fetchPapers();
@@ -212,8 +199,8 @@ export default function TypewriterApp() {
       .eq('id', Number(paperId));
 
     if (error) {
-      alert('주우는데 실패했습니다.');
-      console.error(error);
+      alert('주우는데 실패했습니다: ' + error.message);
+      console.error('Pick up error:', error);
     } else {
       setSelectedPaper(null);
       setIsDiscardedPreviewOpen(false);
@@ -221,7 +208,7 @@ export default function TypewriterApp() {
     }
   };
 
-  // 3. 쓰레기통 드래그 앤 드롭 완전 삭제
+  // 3. 쓰레기통 완전 삭제
   const handleDeletePaper = async (paperId: number) => {
     const { error } = await supabase
       .from('papers')
@@ -230,7 +217,7 @@ export default function TypewriterApp() {
 
     if (error) {
       console.error('삭제 오류:', error);
-      alert('삭제에 실패했습니다.');
+      alert('삭제에 실패했습니다: ' + error.message);
     } else {
       fetchPapers();
     }
@@ -249,10 +236,10 @@ export default function TypewriterApp() {
     if (trashBinRef.current) {
       const rect = trashBinRef.current.getBoundingClientRect();
       const isInside =
-        e.clientX >= rect.left - 15 &&
-        e.clientX <= rect.right + 15 &&
-        e.clientY >= rect.top - 15 &&
-        e.clientY <= rect.bottom + 15;
+        e.clientX >= rect.left - 20 &&
+        e.clientX <= rect.right + 20 &&
+        e.clientY >= rect.top - 20 &&
+        e.clientY <= rect.bottom + 20;
       setIsBinHovered(isInside);
     }
   };
@@ -320,52 +307,54 @@ export default function TypewriterApp() {
             position: 'relative',
           }}
         >
-          {/* ✏️ 좌측 상단 연필 아이콘 (쓰레기통과 동일한 톤앤매너) */}
+          {/* ✏️ 좌측 상단 연필 아이콘 (크기 크게 변경) */}
           <button
             onClick={() => setShowProfileModal(true)}
             style={{
               position: 'absolute',
-              left: '40px',
-              top: '30px',
+              left: '30px',
+              top: '25px',
               backgroundColor: 'transparent',
               border: 'none',
-              fontSize: '22px',
+              fontSize: '36px',
               cursor: 'pointer',
               zIndex: 100,
-              opacity: 0.8,
+              opacity: 0.85,
               transition: 'transform 0.2s ease, opacity 0.2s ease',
-              filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+              filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))',
             }}
             onMouseEnter={(e) => {
               e.currentTarget.style.opacity = '1';
               e.currentTarget.style.transform = 'scale(1.15)';
             }}
             onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '0.8';
+              e.currentTarget.style.opacity = '0.85';
               e.currentTarget.style.transform = 'scale(1)';
             }}
-            title="내 로그인 정보"
+            title="내 계정 정보"
           >
             ✏️
           </button>
 
-          {/* 🗑️ 우측 상단 쓰레기통 이미지 */}
+          {/* 🗑️ 우측 상단 쓰레기통 이미지 (크기 크게 변경) */}
           <img
             ref={trashBinRef}
             src="/bin.png"
             alt="Trash Bin"
             style={{
               position: 'absolute',
-              right: '40px',
-              top: '30px',
-              width: '32px',
+              right: '30px',
+              top: '25px',
+              width: '54px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
               zIndex: 100,
               transition: 'transform 0.2s ease, filter 0.2s ease',
               transform: isBinHovered ? 'scale(1.25)' : 'scale(1)',
-              filter: isBinHovered ? 'drop-shadow(0 0 8px rgba(217, 83, 79, 0.8))' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.5))',
+              filter: isBinHovered
+                ? 'drop-shadow(0 0 10px rgba(217, 83, 79, 0.9))'
+                : 'drop-shadow(0 2px 6px rgba(0,0,0,0.6))',
             }}
             title="드래그해서 여기 놓으면 완전히 삭제됩니다"
           />
@@ -670,7 +659,7 @@ export default function TypewriterApp() {
         </section>
       </div>
 
-      {/* ✏️ 연필 모달 */}
+      {/* ✏️ 계정 정보 모달 */}
       {showProfileModal && (
         <div onClick={() => setShowProfileModal(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
