@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useRef, useEffect, useMemo } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../lib/supabase';
 import { toPng } from 'html-to-image';
 
@@ -117,7 +117,7 @@ export default function TypewriterApp() {
   const touchStartX = useRef<number>(0);
   const touchEndX = useRef<number>(0);
 
-  // Client Hydration 처리 및 초기 날짜 세팅
+  // Client Hydration 및 초기 날짜 세팅
   useEffect(() => {
     setMounted(true);
 
@@ -132,7 +132,7 @@ export default function TypewriterApp() {
     setPaperDateStr(formattedPaperDate);
   }, []);
 
-  // 1. Supabase에서 버려진 종이(is_picked: false) 데이터 가져오기 및 랜덤 배치 좌표 부여
+  // Supabase에서 버려진 종이 가져오기 및 위치 세팅
   const fetchPapers = async () => {
     const { data, error } = await supabase
       .from('papers')
@@ -143,12 +143,11 @@ export default function TypewriterApp() {
     if (error) {
       console.error('글 가져오기 오류:', error);
     } else if (data) {
-      // 바닥 영역 퍼센트(%) 기반 무작위 위치 및 회전각 생성
       const formattedPapers: DiscardedPaper[] = data.map((item) => {
-        const randomX = Math.floor(Math.random() * 80) + 5; // 5% ~ 85%
-        const randomY = Math.floor(Math.random() * 70) + 10; // 10% ~ 80%
-        const randomRotate = Math.floor(Math.random() * 40) - 20; // -20deg ~ 20deg
-        const randomScale = 0.85 + Math.random() * 0.3; // 0.85 ~ 1.15
+        const randomX = Math.floor(Math.random() * 80) + 5;
+        const randomY = Math.floor(Math.random() * 70) + 10;
+        const randomRotate = Math.floor(Math.random() * 40) - 20;
+        const randomScale = 0.85 + Math.random() * 0.3;
 
         return {
           id: item.id,
@@ -171,7 +170,7 @@ export default function TypewriterApp() {
     }
   }, [mounted]);
 
-  // 공유 받은 URL 쿼리 파라미터 감지 (?paper=...)
+  // 공유 링크 쿼리 파라미터 감지 (?paper=...)
   useEffect(() => {
     if (typeof window !== 'undefined') {
       const params = new URLSearchParams(window.location.search);
@@ -191,6 +190,7 @@ export default function TypewriterApp() {
     }
   }, []);
 
+  // 오디오 컨텍스트 초기화
   useEffect(() => {
     const initAudio = () => {
       if (!audioCtxRef.current) {
@@ -414,7 +414,6 @@ export default function TypewriterApp() {
     );
   };
 
-  // 2. 글 버리기 로직
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -441,7 +440,6 @@ export default function TypewriterApp() {
     }
   };
 
-  // 3. 쓰레기 줍기 기능 (Supabase Update: is_picked -> true)
   const handlePickUp = async (paperId: number) => {
     playTrashSound();
     const { error } = await supabase
@@ -540,7 +538,7 @@ export default function TypewriterApp() {
         }
       `}</style>
 
-      {/* 좌/우 슬라이드 터치 영역 */}
+      {/* 좌/우 슬라이드 메인 컨테이너 */}
       <div
         style={{
           display: 'flex',
@@ -550,7 +548,7 @@ export default function TypewriterApp() {
           transform: currentPage === 'typewriter' ? 'translateX(0)' : 'translateX(-100vw)',
         }}
       >
-        {/* ================= 1. 타자기 화면 ================= */}
+        {/* SECTION 1: 타자기 화면 */}
         <section
           ref={typewriterSectionRef}
           style={{
@@ -585,7 +583,7 @@ export default function TypewriterApp() {
             버린 종이들 모아보기 ▶
           </button>
 
-          {/* 바닥 영역에 무작위 흩뿌려진 종이들 */}
+          {/* 바닥 영역 종이 아이콘들 */}
           {papers.map((paper) => (
             <div
               key={paper.id}
@@ -617,7 +615,7 @@ export default function TypewriterApp() {
             </div>
           ))}
 
-          {/* 타자기 이미지 및 입력 창 */}
+          {/* 타자기 본체 & 입력 영역 */}
           <div
             className="typewriter-wrapper"
             style={{
@@ -703,7 +701,7 @@ export default function TypewriterApp() {
             />
           </div>
 
-          {/* 하단 버튼 바 */}
+          {/* 하단 컨트롤 바 */}
           <div
             style={{
               position: 'absolute',
@@ -814,7 +812,7 @@ export default function TypewriterApp() {
           </div>
         </section>
 
-        {/* ================= 2. 버린 종이들 모아보기 공간 (우측 화면) ================= */}
+        {/* SECTION 2: 버린 종이들 모아보기 공간 */}
         <section
           style={{
             width: '100vw',
@@ -949,7 +947,7 @@ export default function TypewriterApp() {
         </section>
       </div>
 
-      {/* 🖼️ 작성 중인 글 미리보기 모달 */}
+      {/* MODAL 1: 작성 중인 글 미리보기 */}
       {isPreviewOpen && (
         <div
           onClick={() => setIsPreviewOpen(false)}
@@ -1097,7 +1095,7 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* 📜 버려진 종이 상세보기 및 줍기(수거) 모달 */}
+      {/* MODAL 2: 버려진 종이 상세보기 및 줍기 */}
       {isDiscardedPreviewOpen && selectedPaper && (
         <div
           onClick={() => setIsDiscardedPreviewOpen(false)}
@@ -1228,6 +1226,22 @@ export default function TypewriterApp() {
               >
                 🔗 Share
               </button>
+              <button
+                onClick={handleDownloadDiscardedImage}
+                style={{
+                  flex: 1,
+                  padding: '12px',
+                  backgroundColor: '#ffffff',
+                  color: '#000000',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                  fontSize: '12px',
+                }}
+              >
+                💾 Save PNG
+              </button>
               {selectedPaper.id !== 0 && (
                 <button
                   onClick={() => handlePickUp(selectedPaper.id)}
@@ -1251,7 +1265,7 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {/* ☕ 후원 모달 */}
+      {/* MODAL 3: 후원 모달 */}
       {isKakaoModalOpen && (
         <div
           onClick={() => setIsKakaoModalOpen(false)}
