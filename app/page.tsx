@@ -357,11 +357,15 @@ export default function TypewriterApp() {
   const handleDeletePaper = async (paperId: number) => {
     const targetId = Number(paperId);
     
+    // 1. 화면 상태에서 즉시 제거 및 모달 닫기 (유령 방지)
     setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
     setDraggingPaper(null);
     setIsDraggingActive(false);
     setIsBinHovered(false);
+    setSelectedPaper(null);
+    setIsDiscardedPreviewOpen(false);
 
+    // 2. Supabase 서버에서 데이터 완전히 삭제 요청
     const { error } = await supabase
       .from('papers')
       .delete()
@@ -369,6 +373,7 @@ export default function TypewriterApp() {
 
     if (error) {
       alert('삭제에 실패했습니다: ' + error.message);
+      fetchPapers(); // 실패 시에만 원복
     }
   };
 
