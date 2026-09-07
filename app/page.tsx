@@ -159,7 +159,7 @@ export default function TypewriterApp() {
     }
   };
 
-  // 1. 종이 버리기 (content 컬럼만 사용하여 에러 해결)
+  // 1. 종이 버리기
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -305,20 +305,22 @@ export default function TypewriterApp() {
             position: 'relative',
           }}
         >
-          {/* ✏️ 좌측 상단 연필 아이콘 (대폭 확대) */}
-          <button
+          {/* ✏️ 좌측 상단 연필 이미지 (pencil.png 사용) */}
+          <img
+            src="/pencil.png"
+            alt="Pencil"
             onClick={() => setShowProfileModal(true)}
             style={{
               position: 'absolute',
               left: '30px',
               top: '25px',
-              backgroundColor: 'transparent',
-              border: 'none',
-              fontSize: '80px',
+              width: '120px',
+              height: 'auto',
+              objectFit: 'contain',
               cursor: 'pointer',
               zIndex: 100,
               opacity: 0.85,
-              transition: 'transform 0.2s ease, opacity 0.2s ease',
+              transition: 'transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease',
               filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.7))',
             }}
             onMouseEnter={(e) => {
@@ -330,11 +332,9 @@ export default function TypewriterApp() {
               e.currentTarget.style.transform = 'scale(1)';
             }}
             title="내 계정 정보"
-          >
-            ✏️
-          </button>
+          />
 
-          {/* 🗑️ 우측 상단 쓰레기통 이미지 (대폭 확대) */}
+          {/* 🗑️ 우측 상단 쓰레기통 이미지 (bin.png 사용) */}
           <img
             ref={trashBinRef}
             src="/bin.png"
