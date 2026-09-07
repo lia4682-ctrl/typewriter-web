@@ -206,18 +206,24 @@ export default function TypewriterApp() {
     }
   };
 
-  // 3. 쓰레기통 완전 삭제
+  // 3. 쓰레기통 완전 삭제 (낙관적 업데이트 및 명확한 숫자 id 처리 적용)
   const handleDeletePaper = async (paperId: number) => {
+    const targetId = Number(paperId);
+    
+    // UI에서 즉시 제거 (낙관적 업데이트)
+    setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
+    setDraggingPaper(null);
+    setIsBinHovered(false);
+
     const { error } = await supabase
       .from('papers')
       .delete()
-      .eq('id', Number(paperId));
+      .eq('id', targetId);
 
     if (error) {
       console.error('삭제 오류:', error);
       alert('삭제에 실패했습니다: ' + error.message);
-    } else {
-      fetchPapers();
+      fetchPapers(); // 실패 시 서버 데이터 복구
     }
   };
 
@@ -234,10 +240,10 @@ export default function TypewriterApp() {
     if (trashBinRef.current) {
       const rect = trashBinRef.current.getBoundingClientRect();
       const isInside =
-        e.clientX >= rect.left - 20 &&
-        e.clientX <= rect.right + 20 &&
-        e.clientY >= rect.top - 20 &&
-        e.clientY <= rect.bottom + 20;
+        e.clientX >= rect.left - 30 &&
+        e.clientX <= rect.right + 30 &&
+        e.clientY >= rect.top - 30 &&
+        e.clientY <= rect.bottom + 30;
       setIsBinHovered(isInside);
     }
   };
@@ -246,9 +252,10 @@ export default function TypewriterApp() {
     if (draggingPaper) {
       if (isBinHovered) {
         await handleDeletePaper(draggingPaper.id);
+      } else {
+        setDraggingPaper(null);
+        setIsBinHovered(false);
       }
-      setDraggingPaper(null);
-      setIsBinHovered(false);
     }
   };
 
@@ -305,7 +312,7 @@ export default function TypewriterApp() {
             position: 'relative',
           }}
         >
-          {/* ✏️ 좌측 상단 연필 이미지 (pencil.png 사용) */}
+          {/* ✏️ 좌측 상단 연필 이미지 */}
           <img
             src="/pencil.png"
             alt="Pencil"
@@ -334,7 +341,7 @@ export default function TypewriterApp() {
             title="내 계정 정보"
           />
 
-          {/* 🗑️ 우측 상단 쓰레기통 이미지 (bin.png 사용) */}
+          {/* 🗑️ 우측 상단 쓰레기통 이미지 */}
           <img
             ref={trashBinRef}
             src="/bin.png"
