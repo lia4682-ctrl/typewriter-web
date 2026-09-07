@@ -427,40 +427,37 @@ export default function TypewriterApp() {
     }
   };
 
-  // 드래그 시작
-  const handleMouseDownPaper = (e: React.MouseEvent, paper: DiscardedPaper) => {
-    e.stopPropagation();
-    const target = e.currentTarget as HTMLElement;
+  // 통합 드래그 시작 (마우스 + 터치)
+  const handleDragStart = (clientX: number, clientY: number, target: HTMLElement, paper: DiscardedPaper) => {
     const rect = target.getBoundingClientRect();
-
     setDraggingPaper(paper);
-    setIsDraggingActive(true); // 곧바로 드래그 활성화
-    setDragPos({ x: e.clientX, y: e.clientY });
+    setIsDraggingActive(true);
+    setDragPos({ x: clientX, y: clientY });
     setDragOffset({
-      x: e.clientX - rect.left,
-      y: e.clientY - rect.top,
+      x: clientX - rect.left,
+      y: clientY - rect.top,
     });
   };
 
-  // 마우스 이동
-  const handleMouseMove = (e: React.MouseEvent) => {
+  // 통합 드래그 이동 (마우스 + 터치)
+  const handleDragMove = (clientX: number, clientY: number) => {
     if (!draggingPaper) return;
 
-    setDragPos({ x: e.clientX, y: e.clientY });
+    setDragPos({ x: clientX, y: clientY });
 
     if (trashBinRef.current) {
       const rect = trashBinRef.current.getBoundingClientRect();
       const isInside =
-        e.clientX >= rect.left - 50 &&
-        e.clientX <= rect.right + 50 &&
-        e.clientY >= rect.top - 50 &&
-        e.clientY <= rect.bottom + 50;
+        clientX >= rect.left - 50 &&
+        clientX <= rect.right + 50 &&
+        clientY >= rect.top - 50 &&
+        clientY <= rect.bottom + 50;
       setIsBinHovered(isInside);
     }
   };
 
-  // 마우스 뗄 때
-  const handleMouseUp = async () => {
+  // 통합 드래그 종료 (마우스 + 터치)
+  const handleDragEnd = async () => {
     if (draggingPaper) {
       if (isBinHovered) {
         await handleDeletePaper(draggingPaper.id);
@@ -493,8 +490,14 @@ export default function TypewriterApp() {
 
   return (
     <main
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
+      onMouseMove={(e) => handleDragMove(e.clientX, e.clientY)}
+      onMouseUp={handleDragEnd}
+      onTouchMove={(e) => {
+        if (e.touches.length > 0) {
+          handleDragMove(e.touches[0].clientX, e.touches[0].clientY);
+        }
+      }}
+      onTouchEnd={handleDragEnd}
       style={{
         position: 'relative',
         height: '100dvh',
@@ -502,6 +505,7 @@ export default function TypewriterApp() {
         backgroundColor: '#000000',
         overflow: 'hidden',
         userSelect: 'none',
+        touchAction: 'none',
       }}
     >
       <style>{`
@@ -615,14 +619,6 @@ export default function TypewriterApp() {
               transition: 'transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease',
               filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.7))',
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.opacity = '1';
-              e.currentTarget.style.transform = 'scale(1.05)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.opacity = '0.85';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
             title="내 계정 정보"
           />
 
@@ -674,7 +670,16 @@ export default function TypewriterApp() {
             return (
               <div
                 key={paper.id}
-                onMouseDown={(e) => handleMouseDownPaper(e, paper)}
+                onMouseDown={(e) => {
+                  e.stopPropagation();
+                  handleDragStart(e.clientX, e.clientY, e.currentTarget, paper);
+                }}
+                onTouchStart={(e) => {
+                  e.stopPropagation();
+                  if (e.touches.length > 0) {
+                    handleDragStart(e.touches[0].clientX, e.touches[0].clientY, e.currentTarget, paper);
+                  }
+                }}
                 onClick={() => {
                   if (!isDragging) {
                     setSelectedPaper(paper);
@@ -693,6 +698,7 @@ export default function TypewriterApp() {
                   cursor: 'grab',
                   opacity: isDragging ? 0.85 : 1,
                   transition: isDragging ? 'none' : 'left 0.3s ease, top 0.3s ease',
+                  touchAction: 'none',
                 }}
               >
                 <img
