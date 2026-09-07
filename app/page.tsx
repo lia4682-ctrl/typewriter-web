@@ -109,7 +109,7 @@ export default function TypewriterApp() {
     }
   };
 
-  // 데이터 동기화 시 기존 로컬 좌표와 상태가 롤백되지 않도록 안전하게 병합
+  // 초기 로드 시에만 서버에서 데이터 가져오기 (이후엔 재호출로 인한 롤백 방지)
   const fetchPapers = async () => {
     try {
       const { data, error } = await supabase
@@ -124,22 +124,14 @@ export default function TypewriterApp() {
 
       if (data) {
         setAllPapers((prevPapers) => {
+          // 이미 로컬에 존재하는 항목들은 상태를 유지하고, 새로운 항목만 매핑
           return data.map((item) => {
             const idNum = Number(item.id);
-            // 이미 화면에 존재하는 종이라면 기존 좌표(x, y, rotate 등)를 유지하여 튀거나 롤백되는 현상 방지
             const existing = prevPapers.find((p) => p.id === idNum);
             if (existing) {
-              return {
-                ...existing,
-                text: item.content || '',
-                sentiment: (item.sentiment as SentimentType) || 'neutral',
-                user_id: String(item.user_id || ''),
-                picked_by: String(item.picked_by || ''),
-                is_picked: Boolean(item.is_picked),
-              };
+              return existing;
             }
 
-            // 새로 추가된 데이터만 랜덤 좌표 부여
             const { x, y } = generateNonOverlappingPos();
             return {
               id: idNum,
@@ -189,7 +181,7 @@ export default function TypewriterApp() {
     }
   };
 
-  // 쓰레기 버리기: 즉시 상태에 반영하고 서버에 전송
+  // 쓰레기 버리기: 강제 새로고침 없이 즉시 로컬에 추가하고 서버 전송 (롤백 원인 차단)
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -197,7 +189,7 @@ export default function TypewriterApp() {
     }
 
     const sentiment = analyzeSentiment(text);
-    const tempId = Date.now(); // 임시 ID로 즉시 렌더링 준비
+    const tempId = Date.now(); // 임시 고유 ID
 
     const newPaper: DiscardedPaper = {
       id: tempId,
@@ -212,10 +204,11 @@ export default function TypewriterApp() {
       is_picked: false,
     };
 
-    // 낙관적 업데이트: 서버 응답 기다리기 전에 화면에 먼저 띄움
+    // 화면에 즉시 반영
     setAllPapers((prev) => [newPaper, ...prev]);
     setText('');
 
+    // 서버에 비동기 저장 (전체 리프레시 수행 안 함)
     const { data, error } = await supabase.from('papers').insert([
       {
         content: newPaper.text,
@@ -227,16 +220,17 @@ export default function TypewriterApp() {
 
     if (error) {
       alert('버리기에 실패했습니다: ' + error.message);
-      // 실패 시 롤백 (임시로 넣었던 것 제거)
       setAllPapers((prev) => prev.filter((p) => p.id !== tempId));
-    } else if (data) {
-      // 서버에서 발급된 진짜 ID로 교체
-      fetchPapers();
+    } else if (data && data[0]) {
+      // 서버에서 생성된 실제 ID로 교체하되 기존 위치/각도는 완벽히 유지
+      const realId = Number(data[0].id);
+      setAllPapers((prev) =>
+        prev.map((p) => (p.id === tempId ? { ...p, id: realId } : p))
+      );
     }
   };
 
   const handlePickUp = async (paperId: number) => {
-    // 낙관적 업데이트: 즉시 주운 상태로 변경
     setAllPapers((prev) =>
       prev.map((p) => (p.id === paperId ? { ...p, is_picked: true, picked_by: userId } : p))
     );
@@ -253,14 +247,13 @@ export default function TypewriterApp() {
 
     if (error) {
       alert('주우는데 실패했습니다: ' + error.message);
-      fetchPapers();
     }
   };
 
   const handleDeletePaper = async (paperId: number) => {
     const targetId = Number(paperId);
     
-    // 낙관적 업데이트: 휴지통에 넣는 순간 화면에서 즉시 삭제
+    // 화면에서 즉시 흔적도 없이 제거
     setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
     setDraggingPaper(null);
     setIsBinHovered(false);
@@ -272,7 +265,6 @@ export default function TypewriterApp() {
 
     if (error) {
       alert('삭제에 실패했습니다: ' + error.message);
-      fetchPapers();
     }
   };
 
