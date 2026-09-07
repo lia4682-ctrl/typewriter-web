@@ -762,12 +762,14 @@ export default function TypewriterApp() {
             style={{
               position: 'fixed',
               bottom: '24px',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              width: 'calc(100% - 32px)',
+              left: '0',
+              right: '0',
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              width: '100%',
               maxWidth: '420px',
               backgroundColor: 'transparent',
-              padding: '0',
+              padding: '0 16px',
               boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
@@ -1042,7 +1044,7 @@ export default function TypewriterApp() {
               <span style={{ position: 'absolute', top: '20px', left: '25px', fontSize: '10px', opacity: 0.4, letterSpacing: '2px' }}>
                 {FRAME_STYLES[discardedFrameIndex].name}
               </span>
-              <p style={{ whiteSpace: 'pre-wrap', margin: 0, lineHeight: '1.8', fontSize: '15px', fontWeight: 300 }}>
+              <p style={{ whiteSpace: 'pre-wrap', margin: '0', lineHeight: '1.8', fontSize: '15px', fontWeight: '300' }}>
                 {selectedPaper.text}
               </p>
               <span style={{ position: 'absolute', bottom: '20px', right: '25px', fontSize: '10px', opacity: 0.3 }}>
