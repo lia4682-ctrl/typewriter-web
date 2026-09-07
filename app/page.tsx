@@ -199,7 +199,6 @@ export default function TypewriterApp() {
           localStorage.setItem('typewriter_user_id', existingUser.username);
           setUserId(existingUser.username);
           setShowLoginModal(false);
-          alert('로그인되었습니다! 환영해요.');
           fetchPapers();
         } else {
           alert('비밀번호가 일치하지 않습니다.');
@@ -220,7 +219,6 @@ export default function TypewriterApp() {
           localStorage.setItem('typewriter_user_id', newUser.username);
           setUserId(newUser.username);
           setShowLoginModal(false);
-          alert('새로운 계정으로 가입 및 로그인되었습니다!');
           fetchPapers();
         }
       }
@@ -523,9 +521,14 @@ export default function TypewriterApp() {
     >
       <style>{`
         .typewriter-wrapper {
-          width: 90%;
-          max-width: 520px;
+          width: 82%;
+          max-width: 420px;
           aspect-ratio: 4 / 3.3;
+        }
+        @media (min-width: 768px) {
+          .typewriter-wrapper {
+            max-width: 520px;
+          }
         }
       `}</style>
 
@@ -588,9 +591,9 @@ export default function TypewriterApp() {
             onClick={() => setShowProfileModal(true)}
             style={{
               position: 'absolute',
-              left: '30px',
-              top: '25px',
-              width: '120px',
+              left: '20px',
+              top: '20px',
+              width: '90px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
@@ -616,9 +619,9 @@ export default function TypewriterApp() {
             alt="Trash Bin"
             style={{
               position: 'absolute',
-              right: '25px',
+              right: '20px',
               top: '20px',
-              width: '64px',
+              width: '45px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
@@ -636,16 +639,16 @@ export default function TypewriterApp() {
             onClick={() => setCurrentPage('trash')}
             style={{
               position: 'absolute',
-              right: '30px',
+              right: '20px',
               top: '50%',
               transform: 'translateY(-50%)',
               backgroundColor: 'rgba(255, 255, 255, 0.08)',
               color: '#d0d0d0',
               border: '1px solid rgba(255, 255, 255, 0.15)',
-              padding: '10px 16px',
+              padding: '8px 12px',
               borderRadius: '20px',
               cursor: 'pointer',
-              fontSize: '12px',
+              fontSize: '11px',
               backdropFilter: 'blur(4px)',
               zIndex: 100,
             }}
@@ -688,7 +691,7 @@ export default function TypewriterApp() {
             );
           })}
 
-          <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 20 }}>
+          <div className="typewriter-wrapper" style={{ position: 'relative', zIndex: 20, marginTop: '-30px' }}>
             <div
               style={{
                 position: 'absolute',
@@ -753,18 +756,20 @@ export default function TypewriterApp() {
           <div
             style={{
               position: 'fixed',
-              bottom: '24px',
-              left: '50%',
-              transform: 'translateX(-50%)',
+              bottom: '0',
+              left: '0',
+              width: '100%',
+              backgroundColor: '#000000',
+              padding: '12px 16px 24px 16px',
+              boxSizing: 'border-box',
               display: 'flex',
               flexDirection: 'column',
-              gap: '10px',
-              width: '90%',
-              maxWidth: '380px',
+              gap: '8px',
               zIndex: 100,
+              boxShadow: '0 -10px 20px rgba(0,0,0,0.8)',
             }}
           >
-            <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+            <div style={{ display: 'flex', gap: '8px', width: '100%', maxWidth: '420px', margin: '0 auto' }}>
               <button
                 onClick={() => {
                   if (!text.trim()) return alert('내용이 없습니다.');
@@ -788,12 +793,14 @@ export default function TypewriterApp() {
               </button>
             </div>
 
-            <button
-              onClick={() => setIsKakaoModalOpen(true)}
-              style={{ width: '100%', padding: '12px 8px', fontSize: '13px', color: '#111', backgroundColor: '#fee500', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}
-            >
-              ☕ 카카오페이로 커피 한 잔 선물하기
-            </button>
+            <div style={{ width: '100%', maxWidth: '420px', margin: '0 auto' }}>
+              <button
+                onClick={() => setIsKakaoModalOpen(true)}
+                style={{ width: '100%', padding: '12px 8px', fontSize: '13px', color: '#111', backgroundColor: '#fee500', border: 'none', borderRadius: '10px', cursor: 'pointer', fontWeight: 'bold' }}
+              >
+                ☕ 카카오페이로 커피 한 잔 선물하기
+              </button>
+            </div>
           </div>
         </section>
 
@@ -1033,12 +1040,12 @@ export default function TypewriterApp() {
                 {selectedPaper.text}
               </p>
               <span style={{ position: 'absolute', bottom: '20px', right: '25px', fontSize: '10px', opacity: 0.3 }}>
-                TYPEWRITER ARCHIVE
+                TYPEWRITER와이프 아카이브
               </span>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%', flexWrap: 'wrap' }}>
               <button onClick={() => setDiscardedFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🎲 무드 변경</button>
-              <button onClick={() => handleSaveFrameAsInput = () => {}} onClick={() => handleSaveFrameAsImage(discardedPreviewCardRef, FRAME_STYLES[discardedFrameIndex].id)} style={{ flex: 1, padding: '12px', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>💾 저장</button>
+              <button onClick={() => handleSaveFrameAsImage(discardedPreviewCardRef, FRAME_STYLES[discardedFrameIndex].id)} style={{ flex: 1, padding: '12px', backgroundColor: '#3b82f6', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>💾 저장</button>
               <button onClick={() => handleCopyShareLink(selectedPaper.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#2a52be', color: '#fff', border: 'none', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🔗 공유</button>
               {selectedPaper.user_id !== userId && selectedPaper.picked_by !== userId && (
                 <button onClick={() => handlePickUp(selectedPaper.id)} style={{ flex: 1.2, padding: '12px', backgroundColor: '#d9534f', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '12px' }}>🧹 줍기</button>
