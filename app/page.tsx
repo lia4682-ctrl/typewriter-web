@@ -42,7 +42,6 @@ export default function TypewriterApp() {
   const [paperDateStr, setPaperDateStr] = useState('');
   const [userId, setUserId] = useState<string>('');
 
-  // 로그인 모달 상태
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [inputUsername, setInputUsername] = useState('');
   const [inputPassword, setInputPassword] = useState('');
@@ -72,7 +71,6 @@ export default function TypewriterApp() {
 
     const storedUserId = localStorage.getItem('typewriter_user_id');
     if (!storedUserId) {
-      //초기 로그인 기록이 없으면 로그인 모달 띄우기
       setShowLoginModal(true);
     } else {
       setUserId(storedUserId);
@@ -94,7 +92,6 @@ export default function TypewriterApp() {
     }
   }, []);
 
-  // 커스텀 로그인 / 회원가입 처리 함수
   const handleLoginOrRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!inputUsername.trim() || !inputPassword.trim()) {
@@ -103,7 +100,6 @@ export default function TypewriterApp() {
     }
 
     try {
-      // 1. 이미 존재하는 아이디인지 확인
       const { data: existingUser, error: searchError } = await supabase
         .from('users')
         .select('*')
@@ -111,7 +107,6 @@ export default function TypewriterApp() {
         .single();
 
       if (existingUser) {
-        // 이미 존재한다면 비밀번호 일치 여부 확인
         if (existingUser.password === inputPassword.trim()) {
           localStorage.setItem('typewriter_user_id', existingUser.username);
           setUserId(existingUser.username);
@@ -122,7 +117,6 @@ export default function TypewriterApp() {
           alert('비밀번호가 일치하지 않습니다.');
         }
       } else {
-        // 존재하지 않는다면 새로 회원가입 후 로그인 처리
         const { data: newUser, error: insertError } = await supabase
           .from('users')
           .insert([{ username: inputUsername.trim(), password: inputPassword.trim() }])
@@ -360,6 +354,13 @@ export default function TypewriterApp() {
       if (isBinHovered) {
         await handleDeletePaper(draggingPaper.id);
       } else {
+        // 드래그를 끝냈을 때 화면 퍼센트 좌표로 위치를 업데이트하도록 수정
+        const newX = Math.max(0, Math.min(95, (dragPos.x / window.innerWidth) * 100));
+        const newY = Math.max(0, Math.min(90, (dragPos.y / window.innerHeight) * 100));
+
+        setAllPapers((prev) =>
+          prev.map((p) => (p.id === draggingPaper.id ? { ...p, x: newX, y: newY } : p))
+        );
         setDraggingPaper(null);
         setIsBinHovered(false);
       }
@@ -398,7 +399,6 @@ export default function TypewriterApp() {
         }
       `}</style>
 
-      {/* 로그인 모달 */}
       {showLoginModal && (
         <div style={modalBgStyle}>
           <div style={{ ...modalCardStyle, maxWidth: '360px' }}>
@@ -441,7 +441,6 @@ export default function TypewriterApp() {
           transform: currentPage === 'typewriter' ? 'translateX(0)' : 'translateX(-100vw)',
         }}
       >
-        {/* 1. 메인 타자기 화면 */}
         <section
           style={{
             width: '100vw',
@@ -679,7 +678,6 @@ export default function TypewriterApp() {
           </div>
         </section>
 
-        {/* 2. 버린 종이 모아보기 페이지 */}
         <section
           style={{
             width: '100vw',
