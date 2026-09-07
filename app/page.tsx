@@ -542,10 +542,10 @@ export default function TypewriterApp() {
         }
         .typewriter-input-wrapper {
           position: absolute;
-          top: 26%;
+          top: 31%;
           left: 32%;
           width: 36%;
-          height: 18%;
+          height: 14%;
           padding: 4px;
           box-sizing: border-box;
           z-index: 3;
@@ -561,10 +561,10 @@ export default function TypewriterApp() {
             margin-bottom: 90px;
           }
           .typewriter-input-wrapper {
-            top: 25%;
+            top: 30%;
             left: 30%;
             width: 40%;
-            height: 19%;
+            height: 15%;
           }
         }
       `}</style>
