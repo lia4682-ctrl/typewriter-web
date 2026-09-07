@@ -42,6 +42,11 @@ export default function TypewriterApp() {
   const [paperDateStr, setPaperDateStr] = useState('');
   const [userId, setUserId] = useState<string>('');
 
+  // 로그인 모달 상태
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [inputUsername, setInputUsername] = useState('');
+  const [inputPassword, setInputPassword] = useState('');
+
   const [currentPage, setCurrentPage] = useState<'typewriter' | 'trash'>('typewriter');
   const [trashTab, setTrashTab] = useState<'others' | 'mine'>('others');
   const [text, setText] = useState<string>('');
@@ -65,13 +70,13 @@ export default function TypewriterApp() {
   useEffect(() => {
     setMounted(true);
 
-    let storedUserId = localStorage.getItem('typewriter_user_id');
+    const storedUserId = localStorage.getItem('typewriter_user_id');
     if (!storedUserId) {
-      const randomNum = Math.floor(10000000 + Math.random() * 90000000).toString();
-      storedUserId = `010-${randomNum.substring(0, 4)}-${randomNum.substring(4)}`;
-      localStorage.setItem('typewriter_user_id', storedUserId);
+      //초기 로그인 기록이 없으면 로그인 모달 띄우기
+      setShowLoginModal(true);
+    } else {
+      setUserId(storedUserId);
     }
-    setUserId(storedUserId);
 
     const today = new Date();
     setPaperDateStr(
@@ -88,6 +93,67 @@ export default function TypewriterApp() {
       fetchSharedPaper(Number(sharedId));
     }
   }, []);
+
+  // 커스텀 로그인 / 회원가입 처리 함수
+  const handleLoginOrRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inputUsername.trim() || !inputPassword.trim()) {
+      alert('아이디와 비밀번호를 모두 입력해주세요.');
+      return;
+    }
+
+    try {
+      // 1. 이미 존재하는 아이디인지 확인
+      const { data: existingUser, error: searchError } = await supabase
+        .from('users')
+        .select('*')
+        .eq('username', inputUsername.trim())
+        .single();
+
+      if (existingUser) {
+        // 이미 존재한다면 비밀번호 일치 여부 확인
+        if (existingUser.password === inputPassword.trim()) {
+          localStorage.setItem('typewriter_user_id', existingUser.username);
+          setUserId(existingUser.username);
+          setShowLoginModal(false);
+          alert('로그인되었습니다! 환영해요.');
+          fetchPapers();
+        } else {
+          alert('비밀번호가 일치하지 않습니다.');
+        }
+      } else {
+        // 존재하지 않는다면 새로 회원가입 후 로그인 처리
+        const { data: newUser, error: insertError } = await supabase
+          .from('users')
+          .insert([{ username: inputUsername.trim(), password: inputPassword.trim() }])
+          .select()
+          .single();
+
+        if (insertError) {
+          alert('회원가입 실패: ' + insertError.message);
+          return;
+        }
+
+        if (newUser) {
+          localStorage.setItem('typewriter_user_id', newUser.username);
+          setUserId(newUser.username);
+          setShowLoginModal(false);
+          alert('새로운 계정으로 가입 및 로그인되었습니다!');
+          fetchPapers();
+        }
+      }
+    } catch (err) {
+      console.error('로그인 처리 중 오류 발생:', err);
+      alert('오류가 발생했습니다. 다시 시도해주세요.');
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('typewriter_user_id');
+    setUserId('');
+    setShowProfileModal(false);
+    setShowLoginModal(true);
+  };
 
   const fetchSharedPaper = async (id: number) => {
     const { data, error } = await supabase.from('papers').select('*').eq('id', id).single();
@@ -109,7 +175,6 @@ export default function TypewriterApp() {
     }
   };
 
-  // 초기 로드 시에만 서버에서 데이터 가져오기 (이후엔 재호출로 인한 롤백 방지)
   const fetchPapers = async () => {
     try {
       const { data, error } = await supabase
@@ -124,7 +189,6 @@ export default function TypewriterApp() {
 
       if (data) {
         setAllPapers((prevPapers) => {
-          // 이미 로컬에 존재하는 항목들은 상태를 유지하고, 새로운 항목만 매핑
           return data.map((item) => {
             const idNum = Number(item.id);
             const existing = prevPapers.find((p) => p.id === idNum);
@@ -155,8 +219,8 @@ export default function TypewriterApp() {
   };
 
   useEffect(() => {
-    if (mounted) fetchPapers();
-  }, [mounted]);
+    if (mounted && userId) fetchPapers();
+  }, [mounted, userId]);
 
   const analyzeSentiment = (inputText: string): SentimentType => {
     let posScore = 0;
@@ -181,7 +245,6 @@ export default function TypewriterApp() {
     }
   };
 
-  // 쓰레기 버리기: 강제 새로고침 없이 즉시 로컬에 추가하고 서버 전송 (롤백 원인 차단)
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -189,7 +252,7 @@ export default function TypewriterApp() {
     }
 
     const sentiment = analyzeSentiment(text);
-    const tempId = Date.now(); // 임시 고유 ID
+    const tempId = Date.now();
 
     const newPaper: DiscardedPaper = {
       id: tempId,
@@ -204,11 +267,9 @@ export default function TypewriterApp() {
       is_picked: false,
     };
 
-    // 화면에 즉시 반영
     setAllPapers((prev) => [newPaper, ...prev]);
     setText('');
 
-    // 서버에 비동기 저장 (전체 리프레시 수행 안 함)
     const { data, error } = await supabase.from('papers').insert([
       {
         content: newPaper.text,
@@ -222,7 +283,6 @@ export default function TypewriterApp() {
       alert('버리기에 실패했습니다: ' + error.message);
       setAllPapers((prev) => prev.filter((p) => p.id !== tempId));
     } else if (data && data[0]) {
-      // 서버에서 생성된 실제 ID로 교체하되 기존 위치/각도는 완벽히 유지
       const realId = Number(data[0].id);
       setAllPapers((prev) =>
         prev.map((p) => (p.id === tempId ? { ...p, id: realId } : p))
@@ -253,7 +313,6 @@ export default function TypewriterApp() {
   const handleDeletePaper = async (paperId: number) => {
     const targetId = Number(paperId);
     
-    // 화면에서 즉시 흔적도 없이 제거
     setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
     setDraggingPaper(null);
     setIsBinHovered(false);
@@ -338,6 +397,40 @@ export default function TypewriterApp() {
           aspect-ratio: 4 / 3.3;
         }
       `}</style>
+
+      {/* 로그인 모달 */}
+      {showLoginModal && (
+        <div style={modalBgStyle}>
+          <div style={{ ...modalCardStyle, maxWidth: '360px' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', color: '#fff' }}>🔑 로그인 / 회원가입</h3>
+            <p style={{ fontSize: '12px', color: '#888', marginBottom: '20px' }}>
+              사용할 아이디와 비밀번호를 입력하세요.<br/>없는 아이디라면 자동으로 가입됩니다.
+            </p>
+            <form onSubmit={handleLoginOrRegister} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input
+                type="text"
+                placeholder="아이디"
+                value={inputUsername}
+                onChange={(e) => setInputUsername(e.target.value)}
+                style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#1e1e1e', border: '1px solid #444', color: '#fff', outline: 'none' }}
+              />
+              <input
+                type="password"
+                placeholder="비밀번호"
+                value={inputPassword}
+                onChange={(e) => setInputPassword(e.target.value)}
+                style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#1e1e1e', border: '1px solid #444', color: '#fff', outline: 'none' }}
+              />
+              <button
+                type="submit"
+                style={{ padding: '12px', backgroundColor: '#4a90e2', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}
+              >
+                시작하기
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
 
       <div
         style={{
@@ -720,16 +813,22 @@ export default function TypewriterApp() {
           <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
             <h3 style={{ margin: '0 0 16px 0', fontSize: '18px' }}>✏️ 내 계정 정보</h3>
             <div style={{ backgroundColor: '#1e1e1e', padding: '16px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#888' }}>접속 계정 / 번호</p>
+              <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#888' }}>현재 로그인된 아이디</p>
               <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#4a90e2', letterSpacing: '1px' }}>
                 {userId}
               </p>
             </div>
             <button
+              onClick={handleLogout}
+              style={{ width: '100%', padding: '10px', backgroundColor: '#d9534f', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', marginBottom: '8px' }}
+            >
+              로그아웃
+            </button>
+            <button
               onClick={() => setShowProfileModal(false)}
               style={{ width: '100%', padding: '10px', backgroundColor: '#444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
             >
-              확인
+              닫기
             </button>
           </div>
         </div>
