@@ -123,7 +123,6 @@ const generateNonOverlappingPos = () => {
 
 export default function TypewriterApp() {
   const [mounted, setMounted] = useState(false);
-  const [paperDateStr, setPaperDateStr] = useState('');
   const [userId, setUserId] = useState<string>('');
 
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -163,15 +162,6 @@ export default function TypewriterApp() {
     } else {
       setUserId(storedUserId);
     }
-
-    const today = new Date();
-    setPaperDateStr(
-      today.toLocaleDateString('en-US', {
-        month: 'long',
-        day: 'numeric',
-        year: 'numeric',
-      }).toUpperCase()
-    );
 
     const params = new URLSearchParams(window.location.search);
     const sharedId = params.get('id');
@@ -542,17 +532,18 @@ export default function TypewriterApp() {
         }
         .typewriter-input-wrapper {
           position: absolute;
-          top: 15%; /* 빨간색 박스 영역 */
-          left: 26%;
-          width: 48%;
-          height: 18%;
-          padding: 4px;
+          top: 15%;
+          left: 28%;
+          width: 44%;
+          height: 16%;
+          padding: 8px;
           box-sizing: border-box;
           z-index: 3;
           display: flex;
           flex-direction: column;
           justify-content: flex-start;
           align-items: center;
+          overflow: hidden;
         }
         @media (max-width: 768px) {
           .typewriter-container {
@@ -561,10 +552,10 @@ export default function TypewriterApp() {
             margin-bottom: 90px;
           }
           .typewriter-input-wrapper {
-            top: 22%;
-            left: 30%;
-            width: 40%;
-            height: 15%;
+            top: 14%;
+            left: 26%;
+            width: 48%;
+            height: 17%;
           }
         }
       `}</style>
@@ -720,12 +711,6 @@ export default function TypewriterApp() {
 
           <div className="typewriter-container">
             <div className="typewriter-input-wrapper">
-              {paperDateStr && (
-                <div style={{ fontSize: '10px', color: '#555', textAlign: 'center', marginBottom: '2px', width: '100%' }}>
-                  {paperDateStr}
-                </div>
-              )}
-
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
@@ -811,7 +796,7 @@ export default function TypewriterApp() {
                 onClick={() => setIsKakaoModalOpen(true)}
                 style={{ flex: 1, width: '100%', padding: '12px 6px', fontSize: '13px', color: '#fff', backgroundColor: '#2a2a2a', border: '1px solid #444', borderRadius: '10px', cursor: 'pointer' }}
               >
-                ☕ 개발자에게 커피 한 잔 선물하기
+                ☕ 카카오페이로 커피 한 잔 선물하기
               </button>
             </div>
           </div>
