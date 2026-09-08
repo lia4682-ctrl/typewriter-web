@@ -27,8 +27,14 @@ export async function POST(req: NextRequest) {
     // 모델 이름을 gemini-3.6-flash로 수정
     const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
 
-    const formattedPrompt = `다음은 사용자가 아날로그 타자기로 작성 중인 글입니다. 이어서 자연스럽고 감성적인 문장 1~2개를 작성해 주세요.\n\n작성 중인 글:\n${textToProcess}`;
+    const formattedPrompt = `다음은 사용자가 아날로그 타자기로 작성 중인 글입니다. 이어서 자연스럽고 감성적인 문장 1~2개를 작성해 주세요.
 
+주의사항:
+- 마크다운 기호(**, *, # 등)를 절대 사용하지 말고 순수 텍스트만 출력하세요.
+- 타자기 특성을 고려하여 완벽한 문장 형태의 한글 1~2줄로만 작성하세요.
+
+작성 중인 글:
+${textToProcess}`;
     const result = await model.generateContentStream({
       contents: [{ role: 'user', parts: [{ text: formattedPrompt }] }],
       generationConfig: {
