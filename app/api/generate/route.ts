@@ -24,8 +24,8 @@ export async function POST(req: NextRequest) {
 
     const genAI = new GoogleGenerativeAI(apiKey);
     
-    // gemini-1.5-flash 대신 gemini-2.0-flash 또는 gemini-1.5-flash-latest 사용
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
+    // 모델 이름을 gemini-3.6-flash로 수정
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' });
 
     const formattedPrompt = `다음은 사용자가 아날로그 타자기로 작성 중인 글입니다. 이어서 자연스럽고 감성적인 문장 1~2개를 작성해 주세요.\n\n작성 중인 글:\n${textToProcess}`;
 
