@@ -842,7 +842,6 @@ export default function TypewriterApp() {
               </button>
             </div>
 
-            {/* 감성 무드 적용 AI 영감 버튼 */}
             <button
               onClick={handleGenerateAIContent}
               disabled={isGenerating}
@@ -1081,7 +1080,7 @@ export default function TypewriterApp() {
                 minHeight: '380px',
                 display: 'flex',
                 flexDirection: 'column',
-                justify.content: 'center',
+                justifyContent: 'center',
                 position: 'relative',
                 boxSizing: 'border-box',
                 transition: 'all 0.4s ease',
