@@ -132,6 +132,7 @@ export default function TypewriterApp() {
   const [currentPage, setCurrentPage] = useState<'typewriter' | 'trash'>('typewriter');
   const [trashTab, setTrashTab] = useState<'others' | 'mine'>('others');
   const [text, setText] = useState<string>('');
+  const [isGenerating, setIsGenerating] = useState(false);
 
   const [allPapers, setAllPapers] = useState<DiscardedPaper[]>([]);
   const [selectedPaper, setSelectedPaper] = useState<DiscardedPaper | null>(null);
@@ -314,6 +315,44 @@ export default function TypewriterApp() {
     }
   };
 
+  // --- Gemini AI 스트리밍 연동 함수 ---
+  const handleGenerateAIContent = async () => {
+    if (isGenerating) return;
+    setIsGenerating(true);
+
+    try {
+      const response = await fetch('/api/generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: text }),
+      });
+
+      if (!response.ok || !response.body) {
+        alert('AI 문장을 불러오는데 실패했습니다.');
+        setIsGenerating(false);
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+
+      // 줄바꿈이 필요한 경우에 대비해 공백 처리 추가
+      setText((prev) => (prev ? prev + (prev.endsWith('\n') ? '' : '\n') : ''));
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        setText((prev) => prev + chunk);
+      }
+    } catch (err) {
+      console.error('AI 생성 중 오류:', err);
+      alert('오류가 발생했습니다. 다시 시도해주세요.');
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   const handleDiscard = async () => {
     if (!text.trim()) {
       alert('버릴 내용이 없습니다.');
@@ -427,7 +466,6 @@ export default function TypewriterApp() {
     }
   };
 
-  // 통합 드래그 시작 (마우스 + 터치)
   const handleDragStart = (clientX: number, clientY: number, target: HTMLElement, paper: DiscardedPaper) => {
     const rect = target.getBoundingClientRect();
     setDraggingPaper(paper);
@@ -439,7 +477,6 @@ export default function TypewriterApp() {
     });
   };
 
-  // 통합 드래그 이동 (마우스 + 터치)
   const handleDragMove = (clientX: number, clientY: number) => {
     if (!draggingPaper) return;
 
@@ -456,7 +493,6 @@ export default function TypewriterApp() {
     }
   };
 
-  // 통합 드래그 종료 (마우스 + 터치)
   const handleDragEnd = async () => {
     if (draggingPaper) {
       if (isBinHovered) {
@@ -717,6 +753,7 @@ export default function TypewriterApp() {
                 onChange={(e) => setText(e.target.value)}
                 placeholder="타자기를 치듯 글을 작성해보세요..."
                 autoFocus
+                disabled={isGenerating}
                 style={{
                   width: '100%',
                   height: '100%',
@@ -781,7 +818,7 @@ export default function TypewriterApp() {
                 }}
                 style={{ flex: 1, padding: '12px 6px', fontSize: '13px', color: '#fff', backgroundColor: '#2a2a2a', border: '1px solid #444', borderRadius: '10px', cursor: 'pointer' }}
               >
-                💾 .txt 저장하기
+                💾 .txt 저장
               </button>
 
               <button
@@ -791,6 +828,25 @@ export default function TypewriterApp() {
                 🗑️ 버리기
               </button>
             </div>
+
+            <button
+              onClick={handleGenerateAIContent}
+              disabled={isGenerating}
+              style={{
+                width: '100%',
+                padding: '12px 6px',
+                fontSize: '13px',
+                color: '#fff',
+                backgroundColor: isGenerating ? '#555' : '#4a90e2',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                fontWeight: 'bold',
+                transition: 'background-color 0.2s ease',
+              }}
+            >
+              {isGenerating ? '✍️ 영감을 불러오는 중...' : '✨ AI 영감 받기'}
+            </button>
 
             <div style={{ width: '100%' }}>
               <button
