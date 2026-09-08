@@ -138,6 +138,7 @@ export default function TypewriterApp() {
   const [selectedPaper, setSelectedPaper] = useState<DiscardedPaper | null>(null);
 
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isDiscardedPreviewOpen, setIsDiscardedPreviewOpen] = useState(false);
@@ -333,14 +334,15 @@ export default function TypewriterApp() {
       }
 
       const reader = response.body.getReader();
-      const decoder = new TextDecoder();
+      const decoder = new TextDecoder('utf-8');
 
-      // 기존 글 끝에 공백이나 줄바꿈 처리
-      setText((prev) => (prev ? prev + (prev.endsWith('\n') ? '' : '\n') : ''));
+      // 줄바꿈이 필요한 경우에 대비해 공백 처리 추가
+      setText((prev) => (prev ? prev + (prev.endsWith('\n') ? '' : ' ') : ''));
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
+        // stream: true로 청크 조각 연결 보완
         const chunk = decoder.decode(value, { stream: true });
         setText((prev) => prev + chunk);
       }
@@ -592,46 +594,6 @@ export default function TypewriterApp() {
             height: 14%;
           }
         }
-
-        /* AI 버튼 전용 아날로그 스타일 및 마이크로 애니메이션 */
-        .ai-inspiration-btn {
-          width: 100%;
-          padding: 13px 16px;
-          font-size: 13px;
-          letter-spacing: 0.5px;
-          color: #f1ebd9;
-          background: linear-gradient(180deg, #2e2823 0%, #1c1815 100%);
-          border: 1px solid rgba(212, 184, 150, 0.3);
-          border-radius: 10px;
-          cursor: pointer;
-          font-weight: 500;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 8px;
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5), inset 0 1px 1px rgba(255, 255, 255, 0.1);
-          transition: all 0.25s ease;
-        }
-        .ai-inspiration-btn:hover:not(:disabled) {
-          background: linear-gradient(180deg, #38312b 0%, #25201c 100%);
-          border-color: rgba(212, 184, 150, 0.6);
-          box-shadow: 0 6px 16px rgba(0, 0, 0, 0.7), 0 0 12px rgba(212, 184, 150, 0.25);
-          transform: translateY(-1px);
-        }
-        .ai-inspiration-btn:active:not(:disabled) {
-          transform: translateY(1px);
-          box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
-        }
-        .ai-inspiration-btn:disabled {
-          cursor: not-allowed;
-          opacity: 0.8;
-          animation: pulse-border 1.5s infinite ease-in-out;
-        }
-        @keyframes pulse-border {
-          0% { border-color: rgba(212, 184, 150, 0.2); }
-          50% { border-color: rgba(212, 184, 150, 0.7); }
-          100% { border-color: rgba(212, 184, 150, 0.2); }
-        }
       `}</style>
 
       {showLoginModal && (
@@ -840,7 +802,7 @@ export default function TypewriterApp() {
               maxWidth: '380px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '10px',
+              gap: '8px',
               zIndex: 100,
             }}
           >
@@ -855,37 +817,46 @@ export default function TypewriterApp() {
                   a.download = `note_${Date.now()}.txt`;
                   a.click();
                 }}
-                style={{ flex: 1, padding: '12px 6px', fontSize: '13px', color: '#d0d0d0', backgroundColor: '#1a1a1a', border: '1px solid #333', borderRadius: '10px', cursor: 'pointer' }}
+                style={{ flex: 1, padding: '12px 6px', fontSize: '13px', color: '#fff', backgroundColor: '#2a2a2a', border: '1px solid #444', borderRadius: '10px', cursor: 'pointer' }}
               >
                 💾 .txt 저장
               </button>
 
               <button
                 onClick={handleDiscard}
-                style={{ flex: 1, padding: '12px 6px', fontSize: '13px', color: '#f8d7da', backgroundColor: '#5a2323', border: '1px solid #721c24', borderRadius: '10px', cursor: 'pointer' }}
+                style={{ flex: 1, padding: '12px 6px', fontSize: '13px', color: '#fff', backgroundColor: '#d9534f', border: 'none', borderRadius: '10px', cursor: 'pointer' }}
               >
                 🗑️ 버리기
               </button>
             </div>
 
-            {/* 개선된 AI 영감 받기 버튼 */}
             <button
-              className="ai-inspiration-btn"
               onClick={handleGenerateAIContent}
               disabled={isGenerating}
+              style={{
+                width: '100%',
+                padding: '12px 6px',
+                fontSize: '13px',
+                color: '#fff',
+                backgroundColor: isGenerating ? '#555' : '#4a90e2',
+                border: 'none',
+                borderRadius: '10px',
+                cursor: isGenerating ? 'not-allowed' : 'pointer',
+                fontWeight: 'bold',
+                transition: 'background-color 0.2s ease',
+              }}
             >
-              {isGenerating ? (
-                <>
-                  <span>✍️</span>
-                  <span>타자기 완성 중...</span>
-                </>
-              ) : (
-                <>
-                  <span>✨</span>
-                  <span>AI 영감 받기</span>
-                </>
-              )}
+              {isGenerating ? '✍️ 영감을 불러오는 중...' : '✨ AI 영감 받기'}
             </button>
+
+            <div style={{ width: '100%' }}>
+              <button
+                onClick={() => setIsKakaoModalOpen(true)}
+                style={{ flex: 1, width: '100%', padding: '12px 6px', fontSize: '13px', color: '#fff', backgroundColor: '#2a2a2a', border: '1px solid #444', borderRadius: '10px', cursor: 'pointer' }}
+              >
+                ☕ 카카오페이로 커피 한 잔 선물하기
+              </button>
+            </div>
           </div>
         </section>
 
@@ -1039,6 +1010,16 @@ export default function TypewriterApp() {
             >
               닫기
             </button>
+          </div>
+        </div>
+      )}
+
+      {isKakaoModalOpen && (
+        <div onClick={() => setIsKakaoModalOpen(false)} style={modalBgStyle}>
+          <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
+            <h3 style={{ margin: '0 0 12px 0' }}>☕ 개발자에게 커피 사주기</h3>
+            <img src="/kakao_image.png" alt="카카오" style={{ width: '100%', borderRadius: '8px', marginBottom: '12px' }} />
+            <button onClick={() => setIsKakaoModalOpen(false)} style={{ width: '100%', padding: '8px', backgroundColor: '#444', color: '#fff', border: 'none', borderRadius: '6px' }}>닫기</button>
           </div>
         </div>
       )}
