@@ -8,9 +8,8 @@ export async function POST(req: NextRequest) {
   try {
     const { prompt } = await req.json();
 
-    if (!prompt) {
-      return new Response(JSON.stringify({ error: 'Prompt is required' }), { status: 400 });
-    }
+    // 프론트엔드에서 빈 값이 넘어올 경우를 대비한 기본 텍스트
+    const contentPrompt = prompt && prompt.trim() !== '' ? prompt : '어느 조용한 밤, 타자기 소리만 방 안을 가득 채웠다.';
 
     const model = genAI.getGenerativeModel({
       model: 'gemini-1.5-flash',
@@ -20,7 +19,7 @@ export async function POST(req: NextRequest) {
       },
     });
 
-    const userPrompt = `다음은 사용자가 아날로그 타자기로 작성 중인 글입니다. 이어서 자연스럽고 감성적인 문장 1~2개를 작성해 주세요.\n\n작성 중인 글:\n${prompt}`;
+    const userPrompt = `다음은 사용자가 아날로그 타자기로 작성 중인 글입니다. 이어서 자연스럽고 감성적인 문장 1~2개를 작성해 주세요.\n\n작성 중인 글:\n${contentPrompt}`;
 
     const result = await model.generateContentStream(userPrompt);
 
