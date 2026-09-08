@@ -138,14 +138,12 @@ export default function TypewriterApp() {
   const [selectedPaper, setSelectedPaper] = useState<DiscardedPaper | null>(null);
 
   const [showProfileModal, setShowProfileModal] = useState(false);
-  const [isKakaoModalOpen, setIsKakaoModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [currentFrameIndex, setCurrentFrameIndex] = useState(0);
   const [isDiscardedPreviewOpen, setIsDiscardedPreviewOpen] = useState(false);
   const [discardedFrameIndex, setDiscardedFrameIndex] = useState(0);
 
   const [draggingPaper, setDraggingPaper] = useState<DiscardedPaper | null>(null);
-  const [isDraggingActive, setIsDraggingActive] = useState(false);
   const [dragPos, setDragPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [dragOffset, setDragOffset] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
   const [isBinHovered, setIsBinHovered] = useState(false);
@@ -315,7 +313,6 @@ export default function TypewriterApp() {
     }
   };
 
-  // --- Gemini AI 스트리밍 연동 함수 ---
   const handleGenerateAIContent = async () => {
     if (isGenerating) return;
     setIsGenerating(true);
@@ -336,13 +333,11 @@ export default function TypewriterApp() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder('utf-8');
 
-      // 줄바꿈이 필요한 경우에 대비해 공백 처리 추가
       setText((prev) => (prev ? prev + (prev.endsWith('\n') ? '' : ' ') : ''));
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        // stream: true로 청크 조각 연결 보완
         const chunk = decoder.decode(value, { stream: true });
         setText((prev) => prev + chunk);
       }
@@ -424,7 +419,6 @@ export default function TypewriterApp() {
     
     setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
     setDraggingPaper(null);
-    setIsDraggingActive(false);
     setIsBinHovered(false);
     setSelectedPaper(null);
     setIsDiscardedPreviewOpen(false);
@@ -470,7 +464,6 @@ export default function TypewriterApp() {
   const handleDragStart = (clientX: number, clientY: number, target: HTMLElement, paper: DiscardedPaper) => {
     const rect = target.getBoundingClientRect();
     setDraggingPaper(paper);
-    setIsDraggingActive(true);
     setDragPos({ x: clientX, y: clientY });
     setDragOffset({
       x: clientX - rect.left,
@@ -509,7 +502,6 @@ export default function TypewriterApp() {
         );
       }
       setDraggingPaper(null);
-      setIsDraggingActive(false);
       setIsBinHovered(false);
     }
   };
@@ -802,7 +794,7 @@ export default function TypewriterApp() {
               maxWidth: '380px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px',
+              gap: '10px',
               zIndex: 100,
             }}
           >
@@ -817,46 +809,62 @@ export default function TypewriterApp() {
                   a.download = `note_${Date.now()}.txt`;
                   a.click();
                 }}
-                style={{ flex: 1, padding: '12px 6px', fontSize: '13px', color: '#fff', backgroundColor: '#2a2a2a', border: '1px solid #444', borderRadius: '10px', cursor: 'pointer' }}
+                style={{
+                  flex: 1,
+                  padding: '12px 6px',
+                  fontSize: '13px',
+                  color: '#ccc',
+                  backgroundColor: '#262626',
+                  border: '1px solid #3d3d3d',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                }}
               >
                 💾 .txt 저장
               </button>
 
               <button
                 onClick={handleDiscard}
-                style={{ flex: 1, padding: '12px 6px', fontSize: '13px', color: '#fff', backgroundColor: '#d9534f', border: 'none', borderRadius: '10px', cursor: 'pointer' }}
+                style={{
+                  flex: 1,
+                  padding: '12px 6px',
+                  fontSize: '13px',
+                  color: '#f3d9d5',
+                  backgroundColor: '#8b3a3a',
+                  border: '1px solid #a84444',
+                  borderRadius: '10px',
+                  cursor: 'pointer',
+                  transition: 'background-color 0.2s',
+                }}
               >
                 🗑️ 버리기
               </button>
             </div>
 
+            {/* 감성 무드 적용 AI 영감 버튼 */}
             <button
               onClick={handleGenerateAIContent}
               disabled={isGenerating}
               style={{
                 width: '100%',
-                padding: '12px 6px',
+                padding: '13px 8px',
                 fontSize: '13px',
-                color: '#fff',
-                backgroundColor: isGenerating ? '#555' : '#4a90e2',
-                border: 'none',
+                fontFamily: 'serif',
+                letterSpacing: '0.5px',
+                color: isGenerating ? '#999' : '#e8dfd1',
+                background: isGenerating
+                  ? '#2b2b2b'
+                  : 'linear-gradient(135deg, #2c2825 0%, #1a1816 100%)',
+                border: '1px solid #5a4d41',
                 borderRadius: '10px',
                 cursor: isGenerating ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                transition: 'background-color 0.2s ease',
+                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)',
+                transition: 'all 0.3s ease',
               }}
             >
-              {isGenerating ? '✍️ 영감을 불러오는 중...' : '✨ AI 영감 받기'}
+              {isGenerating ? '✍️ 영감을 불러오는 중...' : '✨ 영감 불러오기'}
             </button>
-
-            <div style={{ width: '100%' }}>
-              <button
-                onClick={() => setIsKakaoModalOpen(true)}
-                style={{ flex: 1, width: '100%', padding: '12px 6px', fontSize: '13px', color: '#fff', backgroundColor: '#2a2a2a', border: '1px solid #444', borderRadius: '10px', cursor: 'pointer' }}
-              >
-                ☕ 카카오페이로 커피 한 잔 선물하기
-              </button>
-            </div>
           </div>
         </section>
 
@@ -928,7 +936,7 @@ export default function TypewriterApp() {
                   style={{
                     backgroundColor: '#262626',
                     border: isMine 
-                      ? '1px solid #d9534f' 
+                      ? '1px solid #8b3a3a' 
                       : isPickedByMe 
                       ? '1px solid #4a90e2' 
                       : '1px solid #3d3d3d',
@@ -1014,16 +1022,6 @@ export default function TypewriterApp() {
         </div>
       )}
 
-      {isKakaoModalOpen && (
-        <div onClick={() => setIsKakaoModalOpen(false)} style={modalBgStyle}>
-          <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
-            <h3 style={{ margin: '0 0 12px 0' }}>☕ 개발자에게 커피 사주기</h3>
-            <img src="/kakao_image.png" alt="카카오" style={{ width: '100%', borderRadius: '8px', marginBottom: '12px' }} />
-            <button onClick={() => setIsKakaoModalOpen(false)} style={{ width: '100%', padding: '8px', backgroundColor: '#444', color: '#fff', border: 'none', borderRadius: '6px' }}>닫기</button>
-          </div>
-        </div>
-      )}
-
       {isPreviewOpen && (
         <div onClick={() => setIsPreviewOpen(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={{ maxWidth: '420px', width: '100%', padding: '0 20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
@@ -1083,7 +1081,7 @@ export default function TypewriterApp() {
                 minHeight: '380px',
                 display: 'flex',
                 flexDirection: 'column',
-                justifyContent: 'center',
+                justify.content: 'center',
                 position: 'relative',
                 boxSizing: 'border-box',
                 transition: 'all 0.4s ease',
