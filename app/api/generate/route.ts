@@ -65,5 +65,3 @@ export async function POST(req: Request) {
     return new Response('AI 생성 실패', { status: 500 });
   }
 }
-```[cite: 2]
-
