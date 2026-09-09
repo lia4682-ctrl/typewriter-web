@@ -23,92 +23,56 @@ const FRAME_STYLES = [
   {
     id: 'midnight-monologue',
     name: '새벽의 독백',
-    bgColor: '#0e1116',
-    textColor: '#e8eaed',
+    bgColor: '#0f0f11',
+    textColor: '#e1e1e6',
     font: 'serif',
-    border: '1px solid rgba(255, 255, 255, 0.08)',
-    boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8), inset 0 0 80px rgba(0, 0, 0, 0.5)',
+    border: '1px solid rgba(255, 255, 255, 0.06)',
+    boxShadow: '0 24px 60px rgba(0, 0, 0, 0.9)',
   },
   {
     id: 'vintage-film',
     name: '빛바랜 필름',
-    bgColor: '#f4efe6',
-    textColor: '#2b2621',
+    bgColor: '#f2eee3',
+    textColor: '#292522',
     font: 'serif',
-    border: '8px solid #f9f6f0',
-    boxShadow: '0 10px 30px rgba(43, 38, 33, 0.15), inset 0 0 40px rgba(0,0,0,0.03)',
+    border: '1px solid rgba(0, 0, 0, 0.08)',
+    boxShadow: '0 16px 40px rgba(0, 0, 0, 0.2)',
   },
   {
     id: 'deep-forest',
     name: '고요한 숲',
-    bgColor: '#161c18',
-    textColor: '#d4ded7',
+    bgColor: '#141816',
+    textColor: '#cfe2d4',
     font: 'serif',
-    border: '1px solid rgba(160, 180, 165, 0.15)',
-    boxShadow: '0 20px 40px rgba(10, 15, 12, 0.7), inset 0 0 60px rgba(30, 45, 35, 0.3)',
+    border: '1px solid rgba(255, 255, 255, 0.05)',
+    boxShadow: '0 24px 60px rgba(0, 0, 0, 0.8)',
   },
   {
     id: 'warm-paper',
     name: '기억의 방',
-    bgColor: '#faf8f5',
-    textColor: '#4a4238',
+    bgColor: '#f7f5f0',
+    textColor: '#423c35',
     font: 'sans-serif',
-    border: '1px dashed #d1c7bd',
-    boxShadow: '0 12px 35px rgba(0, 0, 0, 0.08)',
-  },
-  {
-    id: 'seaside-fog',
-    name: '흐린 바닷가',
-    bgColor: '#1a2129',
-    textColor: '#cbd5e1',
-    font: 'sans-serif',
-    border: '1px solid rgba(100, 120, 140, 0.2)',
-    boxShadow: '0 20px 40px rgba(10, 15, 20, 0.8), inset 0 0 50px rgba(30, 45, 60, 0.2)',
-  },
-  {
-    id: 'sunset-glow',
-    name: '스미는 노을',
-    bgColor: '#1f1618',
-    textColor: '#f3d9d5',
-    font: 'serif',
-    border: '1px solid rgba(220, 150, 140, 0.2)',
-    boxShadow: '0 20px 40px rgba(15, 10, 12, 0.8), inset 0 0 60px rgba(60, 30, 30, 0.3)',
+    border: '1px solid rgba(0, 0, 0, 0.06)',
+    boxShadow: '0 16px 40px rgba(0, 0, 0, 0.08)',
   },
   {
     id: 'modern-cinema',
     name: '모던 시네마',
-    bgColor: '#080808',
-    textColor: '#f5f5f7',
+    bgColor: '#08080a',
+    textColor: '#f4f4f5',
     font: 'sans-serif',
-    border: '1px solid rgba(255,255,255,0.15)',
-    boxShadow: '0 25px 50px rgba(0,0,0,0.9)',
-  },
-  {
-    id: 'diary-note',
-    name: '다이어리 노트',
-    bgColor: '#fffff8',
-    textColor: '#333333',
-    font: 'sans-serif',
-    border: '2px solid #e2ded0',
-    boxShadow: '0 8px 20px rgba(0,0,0,0.06)',
+    border: '1px solid rgba(255, 255, 255, 0.08)',
+    boxShadow: '0 30px 60px rgba(0, 0, 0, 0.95)',
   },
   {
     id: 'film-noir',
     name: '필름 누아르',
-    bgColor: '#121212',
-    textColor: '#cccccc',
+    bgColor: '#111113',
+    textColor: '#b3b3b8',
     font: 'monospace',
-    border: '2px double #444444',
-    boxShadow: '0 15px 35px rgba(0,0,0,0.8)',
-  },
-  {
-    id: 'vintage-postcard',
-    name: '빈티지 엽서',
-    bgColor: '#f0ece1',
-    textColor: '#524534',
-    font: 'serif',
-    border: '6px solid #e4dccc',
-    boxShadow: '0 10px 25px rgba(82,69,52,0.12)',
+    border: '1px solid rgba(255, 255, 255, 0.1)',
+    boxShadow: '0 20px 50px rgba(0, 0, 0, 0.9)',
   },
 ];
 
@@ -324,6 +288,13 @@ export default function TypewriterApp() {
         body: JSON.stringify({ prompt: text }),
       });
 
+      if (response.status === 429) {
+        const errorMessage = await response.text();
+        alert(errorMessage || '오늘의 무료 AI 사용량을 모두 소모했습니다. 내일 다시 이용해주세요.');
+        setIsGenerating(false);
+        return;
+      }
+
       if (!response.ok || !response.body) {
         alert('AI 문장을 불러오는데 실패했습니다.');
         setIsGenerating(false);
@@ -507,7 +478,7 @@ export default function TypewriterApp() {
   };
 
   if (!mounted) {
-    return <main style={{ backgroundColor: '#000000', height: '100dvh', width: '100vw' }} />;
+    return <main style={{ backgroundColor: '#0a0a0c', height: '100dvh', width: '100vw' }} />;
   }
 
   const myFloorPapers = allPapers.filter(
@@ -531,7 +502,7 @@ export default function TypewriterApp() {
         position: 'relative',
         height: '100dvh',
         width: '100vw',
-        backgroundColor: '#000000',
+        backgroundColor: '#0a0a0c', // Cognity 레퍼런스 스타일의 깊이감 있는 매트 블랙
         overflow: 'hidden',
         userSelect: 'none',
         touchAction: 'none',
@@ -590,31 +561,31 @@ export default function TypewriterApp() {
 
       {showLoginModal && (
         <div style={modalBgStyle}>
-          <div style={{ ...modalCardStyle, maxWidth: '360px' }}>
-            <h3 style={{ margin: '0 0 8px 0', fontSize: '20px', color: '#fff' }}>🔑 로그인 / 회원가입</h3>
-            <p style={{ fontSize: '12px', color: '#888', marginBottom: '20px' }}>
-              사용할 아이디와 비밀번호를 입력하세요.<br/>없는 아이디라면 자동으로 가입됩니다.
+          <div style={{ ...modalCardStyle, maxWidth: '340px' }}>
+            <h3 style={{ margin: '0 0 6px 0', fontSize: '16px', fontWeight: 500, color: '#f5f5f7' }}>Welcome</h3>
+            <p style={{ fontSize: '12px', color: '#86868b', marginBottom: '20px' }}>
+              아이디와 비밀번호를 입력해 시작하세요.
             </p>
-            <form onSubmit={handleLoginOrRegister} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+            <form onSubmit={handleLoginOrRegister} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <input
                 type="text"
                 placeholder="아이디"
                 value={inputUsername}
                 onChange={(e) => setInputUsername(e.target.value)}
-                style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#1e1e1e', border: '1px solid #444', color: '#fff', outline: 'none' }}
+                style={inputStyle}
               />
               <input
                 type="password"
                 placeholder="비밀번호"
                 value={inputPassword}
                 onChange={(e) => setInputPassword(e.target.value)}
-                style={{ padding: '12px', borderRadius: '8px', backgroundColor: '#1e1e1e', border: '1px solid #444', color: '#fff', outline: 'none' }}
+                style={inputStyle}
               />
               <button
                 type="submit"
-                style={{ padding: '12px', backgroundColor: '#4a90e2', color: '#fff', border: 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', marginTop: '8px' }}
+                style={primaryBtnStyle}
               >
-                시작하기
+                입장하기
               </button>
             </form>
           </div>
@@ -626,7 +597,7 @@ export default function TypewriterApp() {
           display: 'flex',
           width: '200vw',
           height: '100%',
-          transition: 'transform 0.5s ease-in-out',
+          transition: 'transform 0.5s cubic-bezier(0.16, 1, 0.3, 1)',
           transform: currentPage === 'typewriter' ? 'translateX(0)' : 'translateX(-100vw)',
         }}
       >
@@ -637,16 +608,16 @@ export default function TypewriterApp() {
             onClick={() => setShowProfileModal(true)}
             style={{
               position: 'absolute',
-              left: '24px',
-              top: '24px',
-              width: '140px',
+              left: '28px',
+              top: '28px',
+              width: '120px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
               zIndex: 100,
-              opacity: 0.85,
-              transition: 'transform 0.2s ease, opacity 0.2s ease, filter 0.2s ease',
-              filter: 'drop-shadow(0 4px 10px rgba(0,0,0,0.7))',
+              opacity: 0.8,
+              transition: 'opacity 0.2s ease, transform 0.2s ease',
+              filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))',
             }}
             title="내 계정 정보"
           />
@@ -657,18 +628,18 @@ export default function TypewriterApp() {
             alt="Trash Bin"
             style={{
               position: 'absolute',
-              right: '24px',
-              top: '24px',
-              width: '110px',
+              right: '28px',
+              top: '28px',
+              width: '100px',
               height: 'auto',
               objectFit: 'contain',
               cursor: 'pointer',
               zIndex: 100,
               transition: 'transform 0.2s ease, filter 0.2s ease',
-              transform: isBinHovered ? 'scale(1.2)' : 'scale(1)',
+              transform: isBinHovered ? 'scale(1.15)' : 'scale(1)',
               filter: isBinHovered
-                ? 'drop-shadow(0 0 24px rgba(255, 255, 255, 0.95)) brightness(1.2)'
-                : 'drop-shadow(0 4px 10px rgba(0,0,0,0.7))',
+                ? 'drop-shadow(0 0 20px rgba(255, 255, 255, 0.4)) brightness(1.1)'
+                : 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))',
             }}
             title="드래그해서 여기 놓으면 완전히 삭제됩니다"
           />
@@ -677,21 +648,22 @@ export default function TypewriterApp() {
             onClick={() => setCurrentPage('trash')}
             style={{
               position: 'absolute',
-              right: '24px',
+              right: '28px',
               top: '50%',
               transform: 'translateY(-50%)',
-              backgroundColor: 'rgba(255, 255, 255, 0.08)',
-              color: '#d0d0d0',
-              border: '1px solid rgba(255, 255, 255, 0.15)',
-              padding: '10px 14px',
+              backgroundColor: '#161618',
+              color: '#d1d1d6',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              padding: '10px 16px',
               borderRadius: '20px',
               cursor: 'pointer',
               fontSize: '12px',
-              backdropFilter: 'blur(4px)',
+              letterSpacing: '-0.2px',
               zIndex: 100,
+              boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
             }}
           >
-            버린 종이들 모아보기 ▶
+            버린 종이들 모아보기 ↗
           </button>
 
           {myFloorPapers.map((paper) => {
@@ -721,11 +693,11 @@ export default function TypewriterApp() {
                   top: isDragging ? `${dragPos.y - dragOffset.y}px` : `${paper.y}%`,
                   width: '80px',
                   transform: isDragging
-                    ? 'scale(1.15) rotate(0deg)'
+                    ? 'scale(1.1) rotate(0deg)'
                     : `rotate(${paper.rotate}deg) scale(${paper.scale})`,
                   zIndex: isDragging ? 200 : 30,
                   cursor: 'grab',
-                  opacity: isDragging ? 0.85 : 1,
+                  opacity: isDragging ? 0.8 : 1,
                   transition: isDragging ? 'none' : 'left 0.3s ease, top 0.3s ease',
                   touchAction: 'none',
                 }}
@@ -744,7 +716,7 @@ export default function TypewriterApp() {
               <textarea
                 value={text}
                 onChange={(e) => setText(e.target.value)}
-                placeholder="타자기를 치듯 글을 작성해보세요..."
+                placeholder="조용히 생각을 적어보세요..."
                 autoFocus
                 disabled={isGenerating}
                 style={{
@@ -755,7 +727,7 @@ export default function TypewriterApp() {
                   backgroundColor: 'transparent',
                   resize: 'none',
                   textAlign: 'center',
-                  lineHeight: '1.4',
+                  lineHeight: '1.5',
                   color: '#1a1a1a',
                   fontSize: '14px',
                   padding: 0,
@@ -794,7 +766,7 @@ export default function TypewriterApp() {
               maxWidth: '380px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '10px',
+              gap: '8px',
               zIndex: 100,
             }}
           >
@@ -809,34 +781,24 @@ export default function TypewriterApp() {
                   a.download = `note_${Date.now()}.txt`;
                   a.click();
                 }}
-                style={{
-                  flex: 1,
-                  padding: '12px 6px',
-                  fontSize: '13px',
-                  color: '#ccc',
-                  backgroundColor: '#262626',
-                  border: '1px solid #3d3d3d',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s',
-                }}
+                style={secondaryBtnStyle}
               >
                 💾 .txt 저장
               </button>
 
               <button
-                onClick={handleDiscard}
-                style={{
-                  flex: 1,
-                  padding: '12px 6px',
-                  fontSize: '13px',
-                  color: '#f3d9d5',
-                  backgroundColor: '#8b3a3a',
-                  border: '1px solid #a84444',
-                  borderRadius: '10px',
-                  cursor: 'pointer',
-                  transition: 'background-color 0.2s',
+                onClick={() => {
+                  if (!text.trim()) return alert('내용이 없습니다.');
+                  setIsPreviewOpen(true);
                 }}
+                style={secondaryBtnStyle}
+              >
+                🎨 카드 꾸미기
+              </button>
+
+              <button
+                onClick={handleDiscard}
+                style={dangerBtnStyle}
               >
                 🗑️ 버리기
               </button>
@@ -849,20 +811,18 @@ export default function TypewriterApp() {
                 width: '100%',
                 padding: '13px 8px',
                 fontSize: '13px',
-                fontFamily: 'serif',
-                letterSpacing: '0.5px',
-                color: isGenerating ? '#999' : '#e8dfd1',
-                background: isGenerating
-                  ? '#2b2b2b'
-                  : 'linear-gradient(135deg, #2c2825 0%, #1a1816 100%)',
-                border: '1px solid #5a4d41',
+                fontWeight: 500,
+                color: '#0a0a0c',
+                backgroundColor: '#f5f5f7',
+                border: 'none',
                 borderRadius: '10px',
                 cursor: isGenerating ? 'not-allowed' : 'pointer',
-                boxShadow: '0 4px 15px rgba(0, 0, 0, 0.4)',
-                transition: 'all 0.3s ease',
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+                transition: 'opacity 0.2s ease',
+                opacity: isGenerating ? 0.6 : 1,
               }}
             >
-              {isGenerating ? '✍️ 영감을 불러오는 중...' : '✨ 영감 불러오기'}
+              {isGenerating ? '영감을 불러오는 중...' : '✨ 영감 불러오기'}
             </button>
           </div>
         </section>
@@ -871,8 +831,8 @@ export default function TypewriterApp() {
           style={{
             width: '100vw',
             height: '100dvh',
-            backgroundColor: '#000000',
-            color: '#e0e0e0',
+            backgroundColor: '#0a0a0c',
+            color: '#f5f5f7',
             padding: '40px 20px',
             boxSizing: 'border-box',
             overflowY: 'auto',
@@ -881,47 +841,49 @@ export default function TypewriterApp() {
         >
           <button
             onClick={() => setCurrentPage('typewriter')}
-            style={{ position: 'absolute', left: '20px', top: '20px', backgroundColor: 'transparent', color: '#aaa', border: 'none', fontSize: '14px', cursor: 'pointer' }}
+            style={{ position: 'absolute', left: '24px', top: '24px', backgroundColor: 'transparent', color: '#86868b', border: 'none', fontSize: '13px', cursor: 'pointer' }}
           >
             ◀ 타자기로 돌아가기
           </button>
 
-          <header style={{ textAlign: 'center', marginTop: '30px', marginBottom: '20px' }}>
-            <h2 style={{ fontSize: '22px', color: '#f0f0f0', margin: 0 }}>📜 버려진 종이 조각들</h2>
+          <header style={{ textAlign: 'center', marginTop: '30px', marginBottom: '32px' }}>
+            <h2 style={{ fontSize: '20px', fontWeight: 500, color: '#ffffff', margin: '0 0 12px 0', letterSpacing: '-0.3px' }}>버려진 조각들</h2>
 
-            <div style={{ display: 'inline-flex', gap: '8px', marginTop: '16px', backgroundColor: '#262626', padding: '4px', borderRadius: '20px' }}>
+            <div style={{ display: 'inline-flex', gap: '4px', backgroundColor: '#161618', padding: '4px', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
               <button
                 onClick={() => setTrashTab('others')}
                 style={{
-                  padding: '6px 16px', borderRadius: '16px', border: 'none', cursor: 'pointer', fontSize: '12px',
-                  backgroundColor: trashTab === 'others' ? '#444' : 'transparent', color: trashTab === 'others' ? '#fff' : '#888',
+                  padding: '6px 14px', borderRadius: '16px', border: 'none', cursor: 'pointer', fontSize: '12px',
+                  backgroundColor: trashTab === 'others' ? '#2c2c2e' : 'transparent', color: trashTab === 'others' ? '#fff' : '#86868b',
+                  transition: 'background 0.2s',
                 }}
               >
-                🌊 타인의 마음 ({othersPapers.length})
+                타인의 마음 ({othersPapers.length})
               </button>
               <button
                 onClick={() => setTrashTab('mine')}
                 style={{
-                  padding: '6px 16px', borderRadius: '16px', border: 'none', cursor: 'pointer', fontSize: '12px',
-                  backgroundColor: trashTab === 'mine' ? '#444' : 'transparent', color: trashTab === 'mine' ? '#fff' : '#888',
+                  padding: '6px 14px', borderRadius: '16px', border: 'none', cursor: 'pointer', fontSize: '12px',
+                  backgroundColor: trashTab === 'mine' ? '#2c2c2e' : 'transparent', color: trashTab === 'mine' ? '#fff' : '#86868b',
+                  transition: 'background 0.2s',
                 }}
               >
-                🕯️ 내가 흘린 & 주운 마음 ({myCollectedPapers.length})
+                내가 흘린 & 주운 마음 ({myCollectedPapers.length})
               </button>
             </div>
           </header>
 
           <main
             style={{
-              maxWidth: '800px',
+              maxWidth: '840px',
               margin: '0 auto',
               display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))',
-              gap: '20px',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+              gap: '16px',
               paddingBottom: '60px',
             }}
           >
-            {(trashTab === 'others' ? othersPapers : myCollectedPapers).map((paper, index) => {
+            {(trashTab === 'others' ? othersPapers : myCollectedPapers).map((paper) => {
               const isMine = paper.user_id === userId;
               const isPickedByMe = paper.picked_by === userId;
 
@@ -933,37 +895,33 @@ export default function TypewriterApp() {
                     setIsDiscardedPreviewOpen(true);
                   }}
                   style={{
-                    backgroundColor: '#262626',
-                    border: isMine 
-                      ? '1px solid #8b3a3a' 
-                      : isPickedByMe 
-                      ? '1px solid #4a90e2' 
-                      : '1px solid #3d3d3d',
-                    borderRadius: '8px',
-                    padding: '16px',
-                    height: '180px',
+                    backgroundColor: '#161618',
+                    border: '1px solid rgba(255, 255, 255, 0.06)',
+                    borderRadius: '12px',
+                    padding: '20px',
+                    height: '170px',
                     display: 'flex',
                     flexDirection: 'column',
                     justifyContent: 'space-between',
                     cursor: 'pointer',
-                    transform: `rotate(${index % 2 === 0 ? '-1deg' : '1deg'})`,
-                    boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.4)',
                     position: 'relative',
+                    transition: 'border-color 0.2s',
                   }}
                 >
-                  <div style={{ position: 'absolute', top: '10px', right: '12px', fontSize: '10px', color: isMine ? '#d9534f' : isPickedByMe ? '#4a90e2' : '#777' }}>
-                    {isMine ? '✍️ 내가 씀' : isPickedByMe ? '📦 내가 주움' : '🌊 타인의 조각'}
+                  <div style={{ position: 'absolute', top: '16px', right: '16px', fontSize: '11px', color: '#86868b' }}>
+                    {isMine ? '내가 씀' : isPickedByMe ? '내가 주움' : '타인의 조각'}
                   </div>
 
                   <p
                     style={{
                       fontSize: '13px',
-                      color: '#ddd',
-                      margin: '12px 0 0 0',
+                      color: '#d1d1d6',
+                      margin: '16px 0 0 0',
                       lineHeight: '1.5',
                       overflow: 'hidden',
                       display: '-webkit-box',
-                      WebkitLineClamp: 4,
+                      WebkitLineClamp: 3,
                       WebkitBoxOrient: 'vertical',
                       whiteSpace: 'pre-wrap',
                       wordBreak: 'break-word',
@@ -972,8 +930,8 @@ export default function TypewriterApp() {
                     {paper.text}
                   </p>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #383838' }}>
-                    <span style={{ fontSize: '11px', color: '#666' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '12px', borderTop: '1px solid rgba(255,255,255,0.04)' }}>
+                    <span style={{ fontSize: '11px', color: '#636366' }}>
                       {paper.created_at ? new Date(paper.created_at).toLocaleDateString('ko-KR') : ''}
                     </span>
                     {!isMine && !isPickedByMe && (
@@ -982,7 +940,7 @@ export default function TypewriterApp() {
                           e.stopPropagation();
                           handlePickUp(paper.id);
                         }}
-                        style={{ backgroundColor: 'transparent', color: '#d9534f', border: 'none', fontSize: '11px', cursor: 'pointer' }}
+                        style={{ backgroundColor: 'transparent', color: '#f5f5f7', border: 'none', fontSize: '11px', cursor: 'pointer', textDecoration: 'underline' }}
                       >
                         마음 줍기
                       </button>
@@ -998,22 +956,22 @@ export default function TypewriterApp() {
       {showProfileModal && (
         <div onClick={() => setShowProfileModal(false)} style={modalBgStyle}>
           <div onClick={(e) => e.stopPropagation()} style={modalCardStyle}>
-            <h3 style={{ margin: '0 0 16px 0', fontSize: '18px' }}>✏️ 내 계정 정보</h3>
-            <div style={{ backgroundColor: '#1e1e1e', padding: '16px', borderRadius: '8px', marginBottom: '20px', textAlign: 'center' }}>
-              <p style={{ margin: '0 0 8px 0', fontSize: '12px', color: '#888' }}>현재 로그인된 아이디</p>
-              <p style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#4a90e2', letterSpacing: '1px' }}>
+            <h3 style={{ margin: '0 0 16px 0', fontSize: '16px', fontWeight: 500, color: '#f5f5f7' }}>계정 정보</h3>
+            <div style={{ backgroundColor: '#161618', padding: '16px', borderRadius: '10px', marginBottom: '20px', border: '1px solid rgba(255,255,255,0.06)' }}>
+              <p style={{ margin: '0 0 4px 0', fontSize: '11px', color: '#86868b' }}>현재 계정</p>
+              <p style={{ margin: 0, fontSize: '15px', fontWeight: 500, color: '#f5f5f7' }}>
                 {userId}
               </p>
             </div>
             <button
               onClick={handleLogout}
-              style={{ width: '100%', padding: '10px', backgroundColor: '#d9534f', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer', marginBottom: '8px' }}
+              style={{ width: '100%', padding: '11px', backgroundColor: 'rgba(255, 69, 58, 0.1)', color: '#ff453a', border: '1px solid rgba(255, 69, 58, 0.2)', borderRadius: '8px', cursor: 'pointer', fontSize: '13px', marginBottom: '8px' }}
             >
               로그아웃
             </button>
             <button
               onClick={() => setShowProfileModal(false)}
-              style={{ width: '100%', padding: '10px', backgroundColor: '#444', color: '#fff', border: 'none', borderRadius: '6px', cursor: 'pointer' }}
+              style={{ width: '100%', padding: '11px', backgroundColor: '#222225', color: '#d1d1d6', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '8px', cursor: 'pointer', fontSize: '13px' }}
             >
               닫기
             </button>
@@ -1033,31 +991,31 @@ export default function TypewriterApp() {
                 fontFamily: FRAME_STYLES[currentFrameIndex].font,
                 border: FRAME_STYLES[currentFrameIndex].border,
                 boxShadow: FRAME_STYLES[currentFrameIndex].boxShadow,
-                padding: '45px 35px', 
-                borderRadius: '4px', 
-                minHeight: '380px',
+                padding: '48px 36px', 
+                borderRadius: '8px', 
+                minHeight: '360px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 position: 'relative',
                 boxSizing: 'border-box',
-                transition: 'all 0.4s ease',
+                transition: 'all 0.3s ease',
               }}
             >
-              <span style={{ position: 'absolute', top: '20px', left: '25px', fontSize: '10px', opacity: 0.4, letterSpacing: '2px' }}>
+              <span style={{ position: 'absolute', top: '24px', left: '28px', fontSize: '10px', opacity: 0.4, letterSpacing: '1px' }}>
                 {FRAME_STYLES[currentFrameIndex].name}
               </span>
-              <p style={{ whiteSpace: 'pre-wrap', margin: 0, lineHeight: '1.8', fontSize: '15px', fontWeight: 300, textAlign: 'center' }}>
+              <p style={{ whiteSpace: 'pre-wrap', margin: 0, lineHeight: '1.7', fontSize: '15px', fontWeight: 400, textAlign: 'center' }}>
                 {text}
               </p>
-              <span style={{ position: 'absolute', bottom: '20px', right: '25px', fontSize: '10px', opacity: 0.3 }}>
-                TYPEWRITER ARCHIVE
+              <span style={{ position: 'absolute', bottom: '24px', right: '28px', fontSize: '10px', opacity: 0.3, letterSpacing: '0.5px' }}>
+                TYPEWRITER
               </span>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%' }}>
-              <button onClick={() => setCurrentFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🎲 무드 변경</button>
-              <button onClick={() => handleSaveFrameAsImage(previewCardRef, FRAME_STYLES[currentFrameIndex].id)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>💾 저장</button>
-              <button onClick={() => setIsPreviewOpen(false)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>닫기</button>
+              <button onClick={() => setCurrentFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={modalControlBtnStyle}>🎲 무드 변경</button>
+              <button onClick={() => handleSaveFrameAsImage(previewCardRef, FRAME_STYLES[currentFrameIndex].id)} style={modalControlBtnStyle}>💾 저장</button>
+              <button onClick={() => setIsPreviewOpen(false)} style={modalControlBtnStyle}>닫기</button>
             </div>
           </div>
         </div>
@@ -1075,33 +1033,33 @@ export default function TypewriterApp() {
                 fontFamily: FRAME_STYLES[discardedFrameIndex].font,
                 border: FRAME_STYLES[discardedFrameIndex].border,
                 boxShadow: FRAME_STYLES[discardedFrameIndex].boxShadow,
-                padding: '45px 35px', 
-                borderRadius: '4px', 
-                minHeight: '380px',
+                padding: '48px 36px', 
+                borderRadius: '8px', 
+                minHeight: '360px',
                 display: 'flex',
                 flexDirection: 'column',
                 justifyContent: 'center',
                 position: 'relative',
                 boxSizing: 'border-box',
-                transition: 'all 0.4s ease',
+                transition: 'all 0.3s ease',
               }}
             >
-              <span style={{ position: 'absolute', top: '20px', left: '25px', fontSize: '10px', opacity: 0.4, letterSpacing: '2px' }}>
+              <span style={{ position: 'absolute', top: '24px', left: '28px', fontSize: '10px', opacity: 0.4, letterSpacing: '1px' }}>
                 {FRAME_STYLES[discardedFrameIndex].name}
               </span>
-              <p style={{ whiteSpace: 'pre-wrap', margin: '0', lineHeight: '1.8', fontSize: '15px', fontWeight: '300', textAlign: 'center' }}>
+              <p style={{ whiteSpace: 'pre-wrap', margin: '0', lineHeight: '1.7', fontSize: '15px', fontWeight: '400', textAlign: 'center' }}>
                 {selectedPaper.text}
               </p>
-              <span style={{ position: 'absolute', bottom: '20px', right: '25px', fontSize: '10px', opacity: 0.3 }}>
-                TYPEWRITER 아카이브
+              <span style={{ position: 'absolute', bottom: '24px', right: '28px', fontSize: '10px', opacity: 0.3, letterSpacing: '0.5px' }}>
+                TYPEWRITER
               </span>
             </div>
             <div style={{ display: 'flex', gap: '8px', marginTop: '16px', width: '100%', flexWrap: 'wrap' }}>
-              <button onClick={() => setDiscardedFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🎲 무드 변경</button>
-              <button onClick={() => handleSaveFrameAsImage(discardedPreviewCardRef, FRAME_STYLES[discardedFrameIndex].id)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>💾 저장</button>
-              <button onClick={() => handleCopyShareLink(selectedPaper.id)} style={{ flex: 1, padding: '12px', backgroundColor: '#222', color: '#ccc', border: '1px solid #333', borderRadius: '8px', cursor: 'pointer', fontSize: '12px' }}>🔗 공유</button>
+              <button onClick={() => setDiscardedFrameIndex((prev) => (prev + 1) % FRAME_STYLES.length)} style={modalControlBtnStyle}>🎲 무드 변경</button>
+              <button onClick={() => handleSaveFrameAsImage(discardedPreviewCardRef, FRAME_STYLES[discardedFrameIndex].id)} style={modalControlBtnStyle}>💾 저장</button>
+              <button onClick={() => handleCopyShareLink(selectedPaper.id)} style={modalControlBtnStyle}>🔗 공유</button>
               {selectedPaper.user_id !== userId && selectedPaper.picked_by !== userId && (
-                <button onClick={() => handlePickUp(selectedPaper.id)} style={{ flex: 1.2, padding: '12px', backgroundColor: '#d9534f', color: '#fff', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '12px' }}>🧹 줍기</button>
+                <button onClick={() => handlePickUp(selectedPaper.id)} style={{ flex: 1.2, padding: '11px', backgroundColor: '#f5f5f7', color: '#0a0a0c', border: 'none', borderRadius: '10px', cursor: 'pointer', fontSize: '12px', fontWeight: 500 }}>🧹 줍기</button>
               )}
             </div>
           </div>
@@ -1111,23 +1069,83 @@ export default function TypewriterApp() {
   );
 }
 
+// 스타일 객체 리팩토링 (AI틱한 형광색이나 과한 그림자 배제, 미니멀 뉴트럴 스타일 적용)
 const modalBgStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0, left: 0,
   width: '100vw', height: '100dvh',
-  backgroundColor: 'rgba(0,0,0,0.85)',
+  backgroundColor: 'rgba(0, 0, 0, 0.75)',
+  backdropFilter: 'blur(6px)',
   display: 'flex', justifyContent: 'center', alignItems: 'center',
   zIndex: 300,
   padding: '20px',
 };
 
 const modalCardStyle: React.CSSProperties = {
-  backgroundColor: '#262626',
-  padding: '24px',
-  borderRadius: '12px',
+  backgroundColor: '#161618',
+  padding: '28px',
+  borderRadius: '16px',
   width: '100%',
   maxWidth: '320px',
   textAlign: 'center',
-  border: '1px solid #444',
-  color: '#fff',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  color: '#f5f5f7',
+  boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+};
+
+const inputStyle: React.CSSProperties = {
+  padding: '12px',
+  borderRadius: '10px',
+  backgroundColor: '#0a0a0c',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  color: '#f5f5f7',
+  outline: 'none',
+  fontSize: '13px',
+};
+
+const primaryBtnStyle: React.CSSProperties = {
+  padding: '12px',
+  backgroundColor: '#f5f5f7',
+  color: '#0a0a0c',
+  border: 'none',
+  borderRadius: '10px',
+  fontWeight: 500,
+  cursor: 'pointer',
+  marginTop: '4px',
+  fontSize: '13px',
+};
+
+const secondaryBtnStyle: React.CSSProperties = {
+  flex: 1,
+  padding: '12px 6px',
+  fontSize: '13px',
+  color: '#d1d1d6',
+  backgroundColor: '#161618',
+  border: '1px solid rgba(255, 255, 255, 0.06)',
+  borderRadius: '10px',
+  cursor: 'pointer',
+  transition: 'background-color 0.2s',
+};
+
+const dangerBtnStyle: React.CSSProperties = {
+  flex: 1,
+  padding: '12px 6px',
+  fontSize: '13px',
+  color: '#ff453a',
+  backgroundColor: 'rgba(255, 69, 58, 0.08)',
+  border: '1px solid rgba(255, 69, 58, 0.15)',
+  borderRadius: '10px',
+  cursor: 'pointer',
+  transition: 'background-color 0.2s',
+};
+
+const modalControlBtnStyle: React.CSSProperties = {
+  flex: 1,
+  padding: '11px',
+  backgroundColor: '#161618',
+  color: '#d1d1d6',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  borderRadius: '8px',
+  cursor: 'pointer',
+  fontSize: '12px',
 };
