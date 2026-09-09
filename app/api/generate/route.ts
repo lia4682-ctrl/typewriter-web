@@ -8,7 +8,7 @@ export async function POST(req: Request) {
 
     // 모델 식별자에 'models/' 접두사를 명시하여 404 에러 방지
     const model = genAI.getGenerativeModel({
-      model: 'models/gemini-1.5-flash', // 이 부분 때문에 404 에러 발생
+      model: 'models/gemini-2.5-flash',
       systemInstruction: `너는 타자기 감성의 깊이 있는 글귀를 완성하는 문학 작가야.
 사용자가 작성하던 문장의 분위기와 톤을 그대로 이어받아서 자연스러운 글을 덧붙여줘.
 
