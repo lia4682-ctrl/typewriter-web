@@ -79,6 +79,72 @@ const FRAME_STYLES = [
 const POSITIVE_WORDS = ['좋아', '좋은', '좋다', '기쁘', '행복', '감사', '고마', '사랑', '즐거운', '신나', '희망'];
 const NEGATIVE_WORDS = ['싫어', '싫다', '짜증', '슬프', '힘들', '우울', '화나', '아프', '지쳐', '괴로', '포기'];
 
+const playTypeSound = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as unknown as { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const bufferSize = ctx.sampleRate * 0.03;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = Math.random() * 2 - 1;
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const biquad = ctx.createBiquadFilter();
+    biquad.type = 'bandpass';
+    biquad.frequency.value = 1200;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.25, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.03);
+
+    noise.connect(biquad);
+    biquad.connect(gain);
+    gain.connect(ctx.destination);
+
+    noise.start();
+  } catch {
+    // AudioContext block handling
+  }
+};
+
+const playTrashSound = () => {
+  try {
+    const AudioContext = window.AudioContext || (window as unknown as { webkitAudioContext: typeof window.AudioContext }).webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const bufferSize = ctx.sampleRate * 0.15;
+    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+
+    const noise = ctx.createBufferSource();
+    noise.buffer = buffer;
+
+    const biquad = ctx.createBiquadFilter();
+    biquad.type = 'lowpass';
+    biquad.frequency.value = 400;
+
+    const gain = ctx.createGain();
+    gain.gain.setValueAtTime(0.4, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+
+    noise.connect(biquad);
+    biquad.connect(gain);
+    gain.connect(ctx.destination);
+
+    noise.start();
+  } catch {
+    // AudioContext block handling
+  }
+};
+
 const generateNonOverlappingPos = () => {
   let x = Math.floor(Math.random() * 75) + 10;
   let y = Math.floor(Math.random() * 75) + 10;
@@ -277,6 +343,14 @@ export default function TypewriterApp() {
     }
   };
 
+  const handleTextChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    if (newText.length > text.length) {
+      playTypeSound();
+    }
+    setText(newText);
+  };
+
   const handleGenerateAIContent = async () => {
     if (isGenerating) return;
     setIsGenerating(true);
@@ -311,6 +385,7 @@ export default function TypewriterApp() {
         if (done) break;
         const chunk = decoder.decode(value, { stream: true });
         setText((prev) => prev + chunk);
+        playTypeSound();
       }
     } catch (err) {
       console.error('AI 생성 중 오류:', err);
@@ -326,6 +401,7 @@ export default function TypewriterApp() {
       return;
     }
 
+    playTrashSound();
     const sentiment = analyzeSentiment(text);
     const tempId = Date.now();
 
@@ -366,6 +442,7 @@ export default function TypewriterApp() {
   };
 
   const handlePickUp = async (paperId: number) => {
+    playTrashSound();
     setAllPapers((prev) =>
       prev.map((p) => (p.id === paperId ? { ...p, is_picked: true, picked_by: userId } : p))
     );
@@ -386,6 +463,7 @@ export default function TypewriterApp() {
   };
 
   const handleDeletePaper = async (paperId: number) => {
+    playTrashSound();
     const targetId = Number(paperId);
     
     setAllPapers((prev) => prev.filter((p) => p.id !== targetId));
@@ -502,7 +580,7 @@ export default function TypewriterApp() {
         position: 'relative',
         height: '100dvh',
         width: '100vw',
-        backgroundColor: '#0a0a0c', // Cognity 레퍼런스 스타일의 깊이감 있는 매트 블랙
+        backgroundColor: '#0a0a0c',
         overflow: 'hidden',
         userSelect: 'none',
         touchAction: 'none',
@@ -619,7 +697,7 @@ export default function TypewriterApp() {
               transition: 'opacity 0.2s ease, transform 0.2s ease',
               filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.5))',
             }}
-            title="내 계정 정보"
+            title="계정 정보"
           />
 
           <img
@@ -715,7 +793,7 @@ export default function TypewriterApp() {
             <div className="typewriter-input-wrapper">
               <textarea
                 value={text}
-                onChange={(e) => setText(e.target.value)}
+                onChange={handleTextChange}
                 placeholder="조용히 생각을 적어보세요..."
                 autoFocus
                 disabled={isGenerating}
@@ -1069,7 +1147,6 @@ export default function TypewriterApp() {
   );
 }
 
-// 스타일 객체 리팩토링 (AI틱한 형광색이나 과한 그림자 배제, 미니멀 뉴트럴 스타일 적용)
 const modalBgStyle: React.CSSProperties = {
   position: 'fixed',
   top: 0, left: 0,
